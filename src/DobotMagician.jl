@@ -17,14 +17,17 @@ struct Magician
 end
 Magician(port::Port) = Magician(port, 1000)  # default timeout 1000ms
 
-struct Command{P}
+struct Command{S,R}
     id::UInt8
     rw::Bool
     allow_queue::Bool
 end
-Command(id, rw, allow_queue, params) = Command{params}(id, rw, allow_queue)
+Command(id, rw, allow_queue, send, receive) = Command{send,receive}(id, rw, allow_queue)
 
-params(cmd::Command{P}) where P = P
+function command_send_size(cmd::Command{Vector{UInt8}}, payload::Vector{UInt8})
+    return UInt8(length(payload))
+end
+command_send_size(cmd::Command{S}, payload::S) where {S} = mapreduce(sizeof, +, S; init=0x0)
 
 """
     $(SIGNATURES)
@@ -41,7 +44,7 @@ appropriate interface is found.
 function find_port(; nports_guess=64)
     dobot_port = nothing
     ports = sp_list_ports()
-    for port in unsafe_wrap(Array, ports, nports_guess, own=false)
+    for port in unsafe_wrap(Array, ports, nports_guess; own=false)
         if port == C_NULL
             break
         elseif sp_get_port_transport(port) == SP_TRANSPORT_USB
@@ -92,7 +95,7 @@ connect(::Nothing) = throw(ErrorException("Dobot interface not found"))
 Disconnect the specified Dobot Magician.
 """
 function disconnect(magician::Magician)
-    sp_close(magician.port)
+    return sp_close(magician.port)
 end
 
 function execute_command(magician::Magician, cmd::Command; queue=false)
@@ -104,20 +107,21 @@ function execute_command(magician::Magician, cmd::Command; queue=false)
         throw(ErrorException("Invalid header"))
     end
     len = magician.buffer[3]
-    nbytes = Int(sp_blocking_read(magician.port, magician.buffer, len + 1, magician.timeout[]))
+    nbytes = Int(sp_blocking_read(
+        magician.port, magician.buffer, len + 1, magician.timeout[]
+    ))
     if nbytes < len + 1
         throw(ErrorException("Serial port errored or timed out waiting for response"))
     end
-
 end
 
-function construct_command(cmd::Command{P}, params::P)
+function construct_command(cmd::Command{S}, params::S)
     io = IOBuffer()
     write(io, 0xaaaa)
-    write(io, 0x2 + mapreduce(sizeof, +, params, init=0x0))
+    write(io, 0x2 + mapreduce(sizeof, +, params; init=0x0))
     write(io, id)
     write(io, cmd.rw | (UInt8(!wait) << 1))
-    mapfoldl(x -> write(io, x), +, params, init=0)
+    mapfoldl(x -> write(io, x), +, params; init=0)
     seek(io, 6)
     checksum = 0
     while !eof(io)
@@ -128,15 +132,40 @@ function construct_command(cmd::Command{P}, params::P)
 end
 
 _unpack_params(io::IO, len::Integer, ::Type{Vector{UInt8}}) = read(io, len)
-_unpack_params(io::IO, ::Integer, param_types::Tuple) = Tuple(read(io, param_type) for param_type in param_types)
+function _unpack_params(io::IO, ::Integer, param_types::Tuple)
+    return Tuple(read(io, param_type) for param_type in param_types)
+end
 _unpack_params(::IO, ::Integer, ::Tuple{}) = ()
 _unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any}) = (read(io, param_types[1]),)
-_unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any, <:Any}) = (read(io, param_types[1]), read(io, param_types[2]))
-_unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any, <:Any, <:Any}) = (read(io, param_types[1]), read(io, param_types[2]), read(io, param_types[3]))
-_unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any, <:Any, <:Any, <:Any}) = (read(io, param_types[1]), read(io, param_types[2]), read(io, param_types[3]), read(io, param_types[4]))
-_unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any, <:Any, <:Any, <:Any, <:Any}) = (read(io, param_types[1]), read(io, param_types[2]), read(io, param_types[3]), read(io, param_types[4]), read(io, param_types[5]))
+function _unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any,<:Any})
+    return (read(io, param_types[1]), read(io, param_types[2]))
+end
+function _unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any,<:Any,<:Any})
+    return (read(io, param_types[1]), read(io, param_types[2]), read(io, param_types[3]))
+end
+function _unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any,<:Any,<:Any,<:Any})
+    return (
+        read(io, param_types[1]),
+        read(io, param_types[2]),
+        read(io, param_types[3]),
+        read(io, param_types[4]),
+    )
+end
+function _unpack_params(
+    io::IO, ::Integer, param_types::Tuple{<:Any,<:Any,<:Any,<:Any,<:Any}
+)
+    return (
+        read(io, param_types[1]),
+        read(io, param_types[2]),
+        read(io, param_types[3]),
+        read(io, param_types[4]),
+        read(io, param_types[5]),
+    )
+end
 
-function unpack_result(result::AbstractVector{UInt8}, id::UInt8, rw::Bool, is_queued::Bool, param_types)
+function unpack_result(
+    result::AbstractVector{UInt8}, id::UInt8, rw::Bool, is_queued::Bool, param_types
+)
     avail = length(result)
     io = IOBuffer(result)
     avail < 2 && throw(ErrorException("Result truncated before header"))
@@ -154,7 +183,7 @@ function unpack_result(result::AbstractVector{UInt8}, id::UInt8, rw::Bool, is_qu
     (ctrl & 0x01) != rw && throw(ErrorException("Incorrect rw"))
     ((ctrl >> 1) & 0x01) != is_queued && throw(ErrorException("Incorrect is_queued"))
     checksum = 0x0
-    for i in 1:len+1
+    for i in 1:(len + 1)
         eof(io) && throw(ErrorException("Result truncated before end of params"))
         checksum += read(io, UInt8)
     end
