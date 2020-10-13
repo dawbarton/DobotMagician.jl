@@ -86,12 +86,33 @@ end
 """
     Command{S,R}
 """
-struct Command{S,R}
+struct Command{S,R,P}
     id::UInt8
     rw::Bool
     allow_queue::Bool
+    description::String
 end
-Command(id, rw, allow_queue, send, receive) = Command{send,receive}(id, rw, allow_queue)
+
+_extract_pair(a) = ((), a)
+_extract_pair(a::Pair) = (a[1], a[2])
+_extract_pair(a::NTuple{N, <:Pair}) where N = (Tuple(b[1] for b in a), Tuple{(b[2] for b in a)...})
+
+function Command(id, rw, allow_queue, send, receive, description::String)
+    # Use pairs because then everything doesn't need to be in Tuples (problems for Vector{UInt8})
+    # Will either be a pair or a tuple of pairs
+    send_names, send_types = _extract_pair(send)
+    receive_names, receive_types = _extract_pair(receive)
+    if send_names isa Tuple{}
+        payload_names = receive_names
+    else
+        payload_names = send_names
+    end
+    return Command{send_types,receive_types,payload_names}(id, rw, allow_queue, description)
+end
+
+function Base.show(io::IO, mime::MIME"text/plain", cmd::Command)
+
+end
 
 function payload_size(cmd::Command{Vector{UInt8}}, payload::Vector{UInt8})
     return UInt8(2 + length(payload))
@@ -215,34 +236,36 @@ end
 
 unpack_payload(cmd::Command{<:Any,R}, payload) where {R} = read(IOBuffer(payload), R)
 
+#! format: off
+
 # Commands - Device information
-const set_device_sn = Command(UInt8(0), true, false, String, ())
-const get_device_sn = Command(UInt8(0), false, false, (), String)
-const set_device_name = Command(UInt8(1), true, false, String, ())
-const get_device_name = Command(UInt8(1), false, false, (), String)
-const get_device_version = Command(UInt8(2), false, false, (), (UInt8, UInt8, UInt8))
-const set_device_with_l = Command(UInt8(3), true, false, (UInt8, UInt32), ())
-const get_device_with_l = Command(UInt8(3), false, false, (), (UInt8, UInt32))
-const get_device_time = Command(UInt8(4), false, false, (), UInt32)
-const get_device_id = Command(UInt8(5), false, false, (), (UInt32, UInt32, UInt32))
+const set_device_sn = Command(0, true, false, :device_sn=>String, (), "Set device serial number")
+const get_device_sn = Command(0, false, false, (), :device_sn=>String, "Get device serial number")
+const set_device_name = Command(1, true, false, :device_name=>String, (), "Set device name")
+const get_device_name = Command(1, false, false, (), :device_name=>String, "Get device name")
+const get_device_version = Command(2, false, false, (), (:major_version=>UInt8, :minor_version=>UInt8, :revision=>UInt8), "Get device version")
+const set_device_with_l = Command(3, true, false, (:is_with_l=>UInt8, :version=>UInt8), (), "Set sliding rail enable status")
+const get_device_with_l = Command(3, false, false, (), :is_with_l=>UInt8, "Get sliding rail enable status")
+const get_device_time = Command(4, false, false, (), :g_systick=>UInt32, "Get device time")
+const get_device_id = Command(5, false, false, (), (:device_id1=>UInt32, :device_id2=>UInt32, :device_id3=>UInt32), "Get device ID")
 
 # Commands - Real-time pose
-const get_pose = Command(UInt8(10), false, false, (), (Float32, Float32, Float32, Float32, Float32, Float32, Float32, Float32))
-const reset_pose = Command(UInt8(11), true, false, (UInt8, Float32, Float32), ())
-const get_pose_l = Command(UInt8(13), false, false, (), Float32)
+# const get_pose = Command(10, false, false, (), (Float32, Float32, Float32, Float32, Float32, Float32, Float32, Float32))
+# const reset_pose = Command(11, true, false, (UInt8, Float32, Float32), ())
+# const get_pose_l = Command(13, false, false, (), Float32)
 
-# Commands - Alarm
-const get_alarms_state = Command(20, false, false, (), Vector{UInt8})
-const clear_all_alarms_state = Command(21, true, false, (), ())
+# # Commands - Alarm
+# const get_alarms_state = Command(20, false, false, (), Vector{UInt8})
+# const clear_all_alarms_state = Command(21, true, false, (), ())
 
-# Commands - Homing
-const set_home_params = Command(30, true, true, (Float32, Float32, Float32, Float32), ())
-const get_home_params = Command(30, false, false, (), (Float32, Float32, Float32, Float32))
-const set_home_cmd = Command(31, true, true, UInt32, ())
-const set_auto_leveling = Command(32, true, true, (UInt8, Float32), ())
-const get_auto_leveling = Command(32, false, false, (), (UInt8, Float32))
+# # Commands - Homing
+# const set_home_params = Command(30, true, true, (Float32, Float32, Float32, Float32), ())
+# const get_home_params = Command(30, false, false, (), (Float32, Float32, Float32, Float32))
+# const set_home_cmd = Command(31, true, true, UInt32, ())
+# const set_auto_leveling = Command(32, true, true, (UInt8, Float32), ())
+# const get_auto_leveling = Command(32, false, false, (), (UInt8, Float32))
 
-# Commands - Handhold teaching
-const set_hht_trig_mode = Command(40, true, false, )
+# # Commands - Handhold teaching
+# const set_hht_trig_mode = Command(40, true, false)
 
 end
