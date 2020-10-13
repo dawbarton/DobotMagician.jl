@@ -37,7 +37,7 @@ function find_port(; nports_guess=64)
             break
         elseif sp_get_port_transport(port) == SP_TRANSPORT_USB
             if sp_get_port_usb_vid_pid(port) == (0x10c4, 0xea60)
-                dobot_port = port
+                dobot_port = sp_copy_port(port)
                 break
             end
         end
@@ -83,7 +83,9 @@ connect(::Nothing) = throw(ErrorException("Dobot interface not found"))
 Disconnect the specified Dobot Magician.
 """
 function disconnect(magician::Magician)
-    return sp_close(magician.port)
+    sp_close(magician.port)
+    sp_free_port(magician.port)
+    return
 end
 
 """
