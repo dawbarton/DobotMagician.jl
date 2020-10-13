@@ -3,7 +3,10 @@ module DobotMagician
 using LibSerialPort
 using DocStringExtensions
 
-export connect, disconnect, send, Magician
+export Magician
+export connect, disconnect
+
+const Port = LibSerialPort.Port
 
 struct Magician
     port::Port
@@ -114,22 +117,22 @@ function Base.show(io::IO, mime::MIME"text/plain", cmd::Command)
 
 end
 
-function payload_size(cmd::Command{Vector{UInt8}}, payload::Vector{UInt8})
+function payload_size(payload::Vector{UInt8})
     return UInt8(2 + length(payload))
 end
 
-function payload_size(cmd::Command{String}, payload::String)
+function payload_size(payload::String)
     if !isascii(payload)
         throw(ArgumentError("Strings must only contain ASCII characters"))
     end
     return UInt8(2 + length(payload))
 end
 
-function payload_size(cmd::Command{S}, payload::S) where {S<:Tuple}
-    return mapreduce(sizeof, +, S; init=0x2)
+function payload_size(payload::Tuple)
+    return UInt8(mapreduce(sizeof, +, payload; init=2))
 end
 
-payload_size(cmd::Command{S}, payload::S) where {S} = UInt8(2 + sizeof(S))
+payload_size(payload) = UInt8(2 + sizeof(payload))
 
 const TIMEOUT_MSG = "Serial port errored or timed out waiting for response"
 
@@ -206,19 +209,20 @@ function execute_command(
 end
 
 function construct_command(cmd::Command{S}, payload::S, queue::Bool) where {S}
+    # Uses dispatch to enforce correct payload types
     (!cmd.allow_queue && queue) && throw(ArgumentError("Command cannot be queued"))
-    sz = payload_size(cmd, payload)
+    sz = payload_size(payload)
     io = IOBuffer(; sizehint=sz + 4)
     write(io, 0xaaaa)
     write(io, sz)
-    write(io, id)
+    write(io, cmd.id)
     write(io, UInt8(cmd.rw) | (UInt8(queue) << 1))
     if S <: Tuple
         mapfoldl(x -> write(io, x), +, payload; init=0)
     else
         write(io, payload)
     end
-    seek(io, 4)
+    seek(io, 3)
     checksum = 0x0
     for i in Base.OneTo(sz)
         checksum -= read(io, UInt8)
@@ -231,7 +235,7 @@ unpack_payload(cmd::Command{<:Any,Vector{UInt8}}, payload) = payload
 
 function unpack_payload(cmd::Command{<:Any,R}, payload) where {R<:Tuple}
     io = IOBuffer(payload)
-    return Tuple(read(io, r) for r in R)
+    return Tuple(read(io, r) for r in R.parameters)
 end
 
 unpack_payload(cmd::Command{<:Any,R}, payload) where {R} = read(IOBuffer(payload), R)
