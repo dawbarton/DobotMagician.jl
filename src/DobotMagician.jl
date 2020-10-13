@@ -145,36 +145,20 @@ function execute_command(
     package = construct_command(cmd, payload, queue)
     sp_blocking_write(magician.port, package, magician.timeout[])
     sp_drain(magician.port)  # ensure that the command package has been sent
-    # Read the header
-    header = Ref(zero(UInt16))
-    nbytes = Int(sp_blocking_read(magician.port, header, 1, magician.timeout[]))
-    if nbytes < 2
+    # Read the header + ID + Ctrl
+    nbytes, header = sp_blocking_read(magician.port, 5, magician.timeout[])
+    if nbytes < 5
         throw(ErrorException(TIMEOUT_MSG))
     end
-    if header[] != 0xaaaa
+    if (header[1] != 0xaa) || (header[2] != 0xaa)
         throw(ErrorException("Invalid header"))
     end
-    # Read the payload length
-    sz = Ref(zero(UInt8))
-    nbytes = Int(sp_blocking_read(magician.port, sz, 1, magician.timeout[]))
-    if nbytes < 1
-        throw(ErrorException(TIMEOUT_MSG))
-    end
-    # Read the ID
-    id = Ref(zero(UInt8))
-    nbytes = Int(sp_blocking_read(magician.port, id, 1, magician.timeout[]))
-    if nbytes < 1
-        throw(ErrorException(TIMEOUT_MSG))
-    end
+    sz = header[3]
+    id = header[4]
+    ctrl = header[5]
     # Check the ID
-    if id[] != cmd.id
+    if id != cmd.id
         throw(ErrorException("Incorrect ID returned"))
-    end
-    # Read the Ctrl
-    ctrl = Ref(zero(UInt8))
-    nbytes = Int(sp_blocking_read(magician.port, ctrl, 1, magician.timeout[]))
-    if nbytes < 1
-        throw(ErrorException(TIMEOUT_MSG))
     end
     # Check the Ctrl
     if ((ctrl & 0x1) > 0) != cmd.rw
@@ -184,22 +168,21 @@ function execute_command(
         throw(ErrorException("Incorrect isQueued returned"))
     end
     # Read the rest of the payload
-    nbytes, payload = Int(sp_blocking_read(magician.port, sz[] - 0x2, magician.timeout[]))
-    if nbytes < (sz[] - 0x2)
+    nbytes, payload = sp_blocking_read(magician.port, sz - 2, magician.timeout[])
+    if nbytes < (sz - 2)
         throw(ErrorException(TIMEOUT_MSG))
     end
     # Read the checksum
-    checksum = Ref(zero(UInt8))
-    nbytes = Int(sp_blocking_read(magician.port, checksum, 1, magician.timeout[]))
+    nbytes, checksum = sp_blocking_read(magician.port, 1, magician.timeout[])
     if nbytes < 1
         throw(ErrorException(TIMEOUT_MSG))
     end
     # Check the checksum
-    checksum_actual = -id[] - ctrl[]
+    checksum_actual = -id - ctrl
     for x in payload
         checksum_actual -= x
     end
-    if checksum_actual != checksum[]
+    if checksum_actual != checksum[1]
         throw(ErrorException("Invalid checksum returned"))
     end
     # Unpack the result
