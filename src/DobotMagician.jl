@@ -8,26 +8,11 @@ export connect, disconnect, send, Magician
 struct Magician
     port::Port
     timeout::Base.RefValue{Int}
-    buffer::Vector{UInt8}
-    iobuffer::Base.GenericIOBuffer{Vector{UInt8}}
     function Magician(port::Port, timeout::Int)
-        buffer = Vector{UInt8}(undef, 256)
-        return new(port, Ref(timeout), buffer, IOBuffer(buffer))
+        return new(port, Ref(timeout))
     end
 end
 Magician(port::Port) = Magician(port, 1000)  # default timeout 1000ms
-
-struct Command{S,R}
-    id::UInt8
-    rw::Bool
-    allow_queue::Bool
-end
-Command(id, rw, allow_queue, send, receive) = Command{send,receive}(id, rw, allow_queue)
-
-function command_send_size(cmd::Command{Vector{UInt8}}, payload::Vector{UInt8})
-    return UInt8(length(payload))
-end
-command_send_size(cmd::Command{S}, payload::S) where {S} = mapreduce(sizeof, +, S; init=0x0)
 
 """
     $(SIGNATURES)
@@ -98,98 +83,166 @@ function disconnect(magician::Magician)
     return sp_close(magician.port)
 end
 
-function execute_command(magician::Magician, cmd::Command; queue=false)
-    nbytes = Int(sp_blocking_read(magician.port, magician.buffer, 3, magician.timeout[]))
-    if nbytes < 3
-        throw(ErrorException("Serial port errored or timed out waiting for response"))
+"""
+    Command{S,R}
+"""
+struct Command{S,R}
+    id::UInt8
+    rw::Bool
+    allow_queue::Bool
+end
+Command(id, rw, allow_queue, send, receive) = Command{send,receive}(id, rw, allow_queue)
+
+function payload_size(cmd::Command{Vector{UInt8}}, payload::Vector{UInt8})
+    return UInt8(2 + length(payload))
+end
+
+function payload_size(cmd::Command{String}, payload::String)
+    if !isascii(payload)
+        throw(ArgumentError("Strings must only contain ASCII characters"))
     end
-    if (magician.buffer[1] != 0xaa) || (magician.buffer[2] != 0xaa)
+    return UInt8(2 + length(payload))
+end
+
+function payload_size(cmd::Command{S}, payload::S) where {S<:Tuple}
+    return mapreduce(sizeof, +, S; init=0x2)
+end
+
+payload_size(cmd::Command{S}, payload::S) where {S} = UInt8(2 + sizeof(S))
+
+const TIMEOUT_MSG = "Serial port errored or timed out waiting for response"
+
+function execute_command(
+    magician::Magician, cmd::Command{S}, payload::S; queue=false
+) where {S}
+    # Construct and send the command package
+    package = construct_command(cmd, payload, queue)
+    sp_blocking_write(magician.port, package, magician.timeout[])
+    sp_drain(magician.port)  # ensure that the command package has been sent
+    # Read the header
+    header = Ref(zero(UInt16))
+    nbytes = Int(sp_blocking_read(magician.port, header, 1, magician.timeout[]))
+    if nbytes < 2
+        throw(ErrorException(TIMEOUT_MSG))
+    end
+    if header[] != 0xaaaa
         throw(ErrorException("Invalid header"))
     end
-    len = magician.buffer[3]
-    nbytes = Int(sp_blocking_read(
-        magician.port, magician.buffer, len + 1, magician.timeout[]
-    ))
-    if nbytes < len + 1
-        throw(ErrorException("Serial port errored or timed out waiting for response"))
+    # Read the payload length
+    sz = Ref(zero(UInt8))
+    nbytes = Int(sp_blocking_read(magician.port, sz, 1, magician.timeout[]))
+    if nbytes < 1
+        throw(ErrorException(TIMEOUT_MSG))
+    end
+    # Read the ID
+    id = Ref(zero(UInt8))
+    nbytes = Int(sp_blocking_read(magician.port, id, 1, magician.timeout[]))
+    if nbytes < 1
+        throw(ErrorException(TIMEOUT_MSG))
+    end
+    # Check the ID
+    if id[] != cmd.id
+        throw(ErrorException("Incorrect ID returned"))
+    end
+    # Read the Ctrl
+    ctrl = Ref(zero(UInt8))
+    nbytes = Int(sp_blocking_read(magician.port, ctrl, 1, magician.timeout[]))
+    if nbytes < 1
+        throw(ErrorException(TIMEOUT_MSG))
+    end
+    # Check the Ctrl
+    if ((ctrl & 0x1) > 0) != cmd.rw
+        throw(ErrorException("Incorrect rw returned"))
+    end
+    if ((ctrl & 0x2) > 0) != queue
+        throw(ErrorException("Incorrect isQueued returned"))
+    end
+    # Read the rest of the payload
+    nbytes, payload = Int(sp_blocking_read(magician.port, sz[] - 0x2, magician.timeout[]))
+    if nbytes < (sz[] - 0x2)
+        throw(ErrorException(TIMEOUT_MSG))
+    end
+    # Read the checksum
+    checksum = Ref(zero(UInt8))
+    nbytes = Int(sp_blocking_read(magician.port, checksum, 1, magician.timeout[]))
+    if nbytes < 1
+        throw(ErrorException(TIMEOUT_MSG))
+    end
+    # Check the checksum
+    checksum_actual = -id[] - ctrl[]
+    for x in payload
+        checksum_actual -= x
+    end
+    if checksum_actual != checksum[]
+        throw(ErrorException("Invalid checksum returned"))
+    end
+    # Unpack the result
+    if queue
+        return read(IOBuffer(payload), UInt64)
+    else
+        return unpack_payload(cmd, payload)
     end
 end
 
-function construct_command(cmd::Command{S}, params::S)
-    io = IOBuffer()
+function construct_command(cmd::Command{S}, payload::S, queue::Bool) where {S}
+    (!cmd.allow_queue && queue) && throw(ArgumentError("Command cannot be queued"))
+    sz = payload_size(cmd, payload)
+    io = IOBuffer(; sizehint=sz + 4)
     write(io, 0xaaaa)
-    write(io, 0x2 + mapreduce(sizeof, +, params; init=0x0))
+    write(io, sz)
     write(io, id)
-    write(io, cmd.rw | (UInt8(!wait) << 1))
-    mapfoldl(x -> write(io, x), +, params; init=0)
-    seek(io, 6)
-    checksum = 0
-    while !eof(io)
+    write(io, UInt8(cmd.rw) | (UInt8(queue) << 1))
+    if S <: Tuple
+        mapfoldl(x -> write(io, x), +, payload; init=0)
+    else
+        write(io, payload)
+    end
+    seek(io, 4)
+    checksum = 0x0
+    for i in Base.OneTo(sz)
         checksum -= read(io, UInt8)
     end
     write(io, checksum)
     return take!(io)
 end
 
-_unpack_params(io::IO, len::Integer, ::Type{Vector{UInt8}}) = read(io, len)
-function _unpack_params(io::IO, ::Integer, param_types::Tuple)
-    return Tuple(read(io, param_type) for param_type in param_types)
-end
-_unpack_params(::IO, ::Integer, ::Tuple{}) = ()
-_unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any}) = (read(io, param_types[1]),)
-function _unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any,<:Any})
-    return (read(io, param_types[1]), read(io, param_types[2]))
-end
-function _unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any,<:Any,<:Any})
-    return (read(io, param_types[1]), read(io, param_types[2]), read(io, param_types[3]))
-end
-function _unpack_params(io::IO, ::Integer, param_types::Tuple{<:Any,<:Any,<:Any,<:Any})
-    return (
-        read(io, param_types[1]),
-        read(io, param_types[2]),
-        read(io, param_types[3]),
-        read(io, param_types[4]),
-    )
-end
-function _unpack_params(
-    io::IO, ::Integer, param_types::Tuple{<:Any,<:Any,<:Any,<:Any,<:Any}
-)
-    return (
-        read(io, param_types[1]),
-        read(io, param_types[2]),
-        read(io, param_types[3]),
-        read(io, param_types[4]),
-        read(io, param_types[5]),
-    )
+unpack_payload(cmd::Command{<:Any,Vector{UInt8}}, payload) = payload
+
+function unpack_payload(cmd::Command{<:Any,R}, payload) where {R<:Tuple}
+    io = IOBuffer(payload)
+    return Tuple(read(io, r) for r in R)
 end
 
-function unpack_result(
-    result::AbstractVector{UInt8}, id::UInt8, rw::Bool, is_queued::Bool, param_types
-)
-    avail = length(result)
-    io = IOBuffer(result)
-    avail < 2 && throw(ErrorException("Result truncated before header"))
-    read(io, UInt16) != 0xaaaa && throw(ErrorException("Incorrect header"))
-    avail -= 2
-    avail < 1 && throw(ErrorException("Result truncated before len"))
-    len = read(io, UInt8) - 0x2
-    avail -= 1
-    avail < 1 && throw(ErrorException("Result truncated before ID"))
-    read(io, UInt8) != id && throw(ErrorException("Incorrect ID"))
-    avail -= 1
-    avail < 1 && throw(ErrorException("Result truncated before ctrl"))
-    ctrl = read(io, UInt8)
-    avail -= 1
-    (ctrl & 0x01) != rw && throw(ErrorException("Incorrect rw"))
-    ((ctrl >> 1) & 0x01) != is_queued && throw(ErrorException("Incorrect is_queued"))
-    checksum = 0x0
-    for i in 1:(len + 1)
-        eof(io) && throw(ErrorException("Result truncated before end of params"))
-        checksum += read(io, UInt8)
-    end
-    checksum != 0x0 && throw(ErrorException("Incorrect checksum"))
-    seek(io, 6)
-    return _unpack_params(io, len, param_types)
-end
+unpack_payload(cmd::Command{<:Any,R}, payload) where {R} = read(IOBuffer(payload), R)
+
+# Commands - Device information
+const set_device_sn = Command(UInt8(0), true, false, String, ())
+const get_device_sn = Command(UInt8(0), false, false, (), String)
+const set_device_name = Command(UInt8(1), true, false, String, ())
+const get_device_name = Command(UInt8(1), false, false, (), String)
+const get_device_version = Command(UInt8(2), false, false, (), (UInt8, UInt8, UInt8))
+const set_device_with_l = Command(UInt8(3), true, false, (UInt8, UInt32), ())
+const get_device_with_l = Command(UInt8(3), false, false, (), (UInt8, UInt32))
+const get_device_time = Command(UInt8(4), false, false, (), UInt32)
+const get_device_id = Command(UInt8(5), false, false, (), (UInt32, UInt32, UInt32))
+
+# Commands - Real-time pose
+const get_pose = Command(UInt8(10), false, false, (), (Float32, Float32, Float32, Float32, Float32, Float32, Float32, Float32))
+const reset_pose = Command(UInt8(11), true, false, (UInt8, Float32, Float32), ())
+const get_pose_l = Command(UInt8(13), false, false, (), Float32)
+
+# Commands - Alarm
+const get_alarms_state = Command(20, false, false, (), Vector{UInt8})
+const clear_all_alarms_state = Command(21, true, false, (), ())
+
+# Commands - Homing
+const set_home_params = Command(30, true, true, (Float32, Float32, Float32, Float32), ())
+const get_home_params = Command(30, false, false, (), (Float32, Float32, Float32, Float32))
+const set_home_cmd = Command(31, true, true, UInt32, ())
+const set_auto_leveling = Command(32, true, true, (UInt8, Float32), ())
+const get_auto_leveling = Command(32, false, false, (), (UInt8, Float32))
+
+# Commands - Handhold teaching
+const set_hht_trig_mode = Command(40, true, false, )
 
 end
