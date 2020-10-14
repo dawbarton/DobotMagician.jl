@@ -307,7 +307,7 @@ const set_jog_coordinate_params = Command(71, true, true, (:velocity_x=>Float32,
 const get_jog_coordinate_params = Command(71, false, false, (), (:velocity_x=>Float32,:velocity_y=>Float32,:velocity_z=>Float32,:velocity_r=>Float32,:acceleration_x=>Float32,:acceleration_y=>Float32,:acceleration_z=>Float32,:acceleration_r=>Float32), "Get the velocity and acceleration in Cartesian coordinates in jogging mode")
 const set_jog_common_params = Command(72, true, true, (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), (), "Set the velocity and acceleration ratios of the sliding rail")
 const get_jog_common_params = Command(72, false, false, (), (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), "Get the velocity and acceleration ratios of the sliding rail")
-const set_jog_cmd = Command(73, true, true, (:is_joint=>UInt8, :cmd=>UInt8), (), "Execute the jog command in Cartesian coordinates or joints (cmd=1 or 2 for positive or negative jogging in x/J1, cmd=3 or 4 for y/J2, etc)")
+const set_jog_cmd = Command(73, true, true, (:is_joint=>UInt8, :cmd=>UInt8), (), "Execute the jog command in Cartesian coordinates or joints (cmd=0 stop, cmd=1 or 2 for positive or negative jogging in x/J1, cmd=3 or 4 for y/J2, etc)")
 const set_jog_l_params = Command(74, true, true, (:velocity=>Float32, :acceleration=>Float32), (), "Set the velocity and acceleration of the sliding rail in jog mode") # NOTE: there is a discrepancy in the manual regarding the data types and overall length of the message
 
 end
