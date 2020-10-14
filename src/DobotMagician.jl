@@ -294,7 +294,7 @@ const get_hht_trig_output = Command(42, false, false, (), :is_triggered=>UInt8, 
 const set_end_effector_params = Command(60, true, true, (:x_bias=>Float32, :y_bias=>Float32, :z_bias=>Float32), (), "Set the offset of the end effector")
 const get_end_effector_params = Command(60, false, false, (), (:x_bias=>Float32, :y_bias=>Float32, :z_bias=>Float32), "Get the offset of the end effector")
 const set_end_effector_laser = Command(61, true, true, (:enable_ctrl=>UInt8, :on=>UInt8), (), "Set the status of the laser")
-const get_end_effector_laser = Command(61, false, false, (), (:is_ctrl_enabled=>UInt8, :is_on=>UInt8), (), "Get the status of the laser")
+const get_end_effector_laser = Command(61, false, false, (), (:is_ctrl_enabled=>UInt8, :is_on=>UInt8), "Get the status of the laser")
 const set_end_effector_suction_cup = Command(62, true, true, (:is_ctrl_enabled=>UInt8, :is_sucked=>UInt8), (), "Set the status of the suction cup")
 const get_end_effector_suction_cup = Command(62, false, false, (), (:is_ctrl_enabled=>UInt8, :is_sucked=>UInt8), "Get the status of the suction cup")
 const set_end_effector_gripper = Command(63, true, true, (:is_ctrl_enabled=>UInt8, :is_gripped=>UInt8), (), "Set the status of the gripper")
