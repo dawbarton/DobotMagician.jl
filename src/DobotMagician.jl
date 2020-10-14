@@ -85,7 +85,7 @@ Disconnect the specified Dobot Magician.
 function disconnect(magician::Magician)
     sp_close(magician.port)
     sp_free_port(magician.port)
-    return
+    return nothing
 end
 
 """
@@ -100,7 +100,10 @@ end
 
 _extract_pair(a) = ((), a)
 _extract_pair(a::Pair) = (a[1], a[2])
-_extract_pair(a::NTuple{N, <:Pair}) where N = (Tuple(b[1] for b in a), Tuple{(b[2] for b in a)...})
+
+function _extract_pair(a::NTuple{N,<:Pair}) where {N}
+    return (Tuple(b[1] for b in a), Tuple{(b[2] for b in a)...})
+end
 
 function Command(id, rw, allow_queue, send, receive, description::String)
     # Use pairs because then everything doesn't need to be in Tuples (problems for Vector{UInt8})
@@ -115,18 +118,29 @@ function Command(id, rw, allow_queue, send, receive, description::String)
     return Command{send_types,receive_types,payload_names}(id, rw, allow_queue, description)
 end
 
-function Base.show(io::IO, mime::MIME"text/plain", cmd::Command)
-
+function (cmd::Command)(magician::Magician, args...; kwargs...)
+    return execute_command(magician, cmd, args...; kwargs...)
 end
 
-function payload_size(payload::Vector{UInt8})
-    return UInt8(2 + length(payload))
+function Base.show(io::IO, ::MIME"text/plain", cmd::Command{S,R,P}) where {S,R,P}
+    _S = S <: Tuple ? S.parameters : (S,)
+    _R = R <: Tuple ? R.parameters : (R,)
+    names = P isa Symbol ? (P,) : P
+    types = isempty(_S) ? _R : _S
+    return print(
+        io,
+        """
+            Dobot Magician command
+            ID:          $(cmd.id)
+            R/W:         $(cmd.rw)
+            Allow queue: $(cmd.allow_queue)
+            Description: $(cmd.description)
+            Payload:
+                $(join([string(name)*"::"*string(type) for (name, type) in zip(names, types)], "\n    "))""",
+    )
 end
 
-function payload_size(payload::String)
-    if !isascii(payload)
-        throw(ArgumentError("Strings must only contain ASCII characters"))
-    end
+function payload_size(payload::Union{Vector{UInt8},String})
     return UInt8(2 + length(payload))
 end
 
@@ -139,7 +153,7 @@ payload_size(payload) = UInt8(2 + sizeof(payload))
 const TIMEOUT_MSG = "Serial port errored or timed out waiting for response"
 
 function execute_command(
-    magician::Magician, cmd::Command{S}, payload::S; queue=false
+    magician::Magician, cmd::Command{S}, payload::S=(); queue=false
 ) where {S}
     # Construct and send the command package
     package = construct_command(cmd, payload, queue)
@@ -196,6 +210,16 @@ end
 function construct_command(cmd::Command{S}, payload::S, queue::Bool) where {S}
     # Uses dispatch to enforce correct payload types
     (!cmd.allow_queue && queue) && throw(ArgumentError("Command cannot be queued"))
+    # String checks
+    if payload isa String
+        if !isascii(payload)
+            throw(ArgumentError("Strings must only contain ASCII characters"))
+        end
+        if payload[end] != '\0'
+            payload *= '\0'
+        end
+    end
+    # Construct the message
     sz = payload_size(payload)
     io = IOBuffer(; sizehint=sz + 4)
     write(io, 0xaaaa)
@@ -218,6 +242,11 @@ end
 
 unpack_payload(cmd::Command{<:Any,Vector{UInt8}}, payload) = payload
 
+function unpack_payload(cmd::Command{<:Any,String}, payload)
+    # Strip the trailing null terminator
+    return read(IOBuffer(payload), String)[1:(end - 1)]
+end
+
 function unpack_payload(cmd::Command{<:Any,R}, payload) where {R<:Tuple}
     io = IOBuffer(payload)
     return Tuple(read(io, r) for r in R.parameters)
@@ -239,22 +268,46 @@ const get_device_time = Command(4, false, false, (), :g_systick=>UInt32, "Get de
 const get_device_id = Command(5, false, false, (), (:device_id1=>UInt32, :device_id2=>UInt32, :device_id3=>UInt32), "Get device ID")
 
 # Commands - Real-time pose
-# const get_pose = Command(10, false, false, (), (Float32, Float32, Float32, Float32, Float32, Float32, Float32, Float32))
-# const reset_pose = Command(11, true, false, (UInt8, Float32, Float32), ())
-# const get_pose_l = Command(13, false, false, (), Float32)
+const get_pose = Command(10, false, false, (), (:x=>Float32, :y=>Float32, :z=>Float32, :r=>Float32, :J1=>Float32, :J2=>Float32, :J3=>Float32, :J4=>Float32), "Get the real-time pose")
+const reset_pose = Command(11, true, false, (:manual=>UInt8, :rear_arm_angle=>Float32, :front_arm_angle=>Float32), (), "Reset the real-time pose")
+const get_pose_l = Command(13, false, false, (), :pose_l=>Float32, "Get the real-time pose of the sliding rail")
 
-# # Commands - Alarm
-# const get_alarms_state = Command(20, false, false, (), Vector{UInt8})
-# const clear_all_alarms_state = Command(21, true, false, (), ())
+# Commands - Alarm
+const get_alarms_state = Command(20, false, false, (), :alarms_state=>Vector{UInt8}, "Get the alarms state")
+const clear_all_alarms_state = Command(21, true, false, (), (), "Clear the alarms state")
 
-# # Commands - Homing
-# const set_home_params = Command(30, true, true, (Float32, Float32, Float32, Float32), ())
-# const get_home_params = Command(30, false, false, (), (Float32, Float32, Float32, Float32))
-# const set_home_cmd = Command(31, true, true, UInt32, ())
-# const set_auto_leveling = Command(32, true, true, (UInt8, Float32), ())
-# const get_auto_leveling = Command(32, false, false, (), (UInt8, Float32))
+# Commands - Homing
+const set_home_params = Command(30, true, true, (:x=>Float32, :y=>Float32, :z=>Float32, :r=>Float32), (), "Set the homing position")
+const get_home_params = Command(30, false, false, (), (:x=>Float32, :y=>Float32, :z=>Float32, :r=>Float32), "Get the homing position")
+const set_home_cmd = Command(31, true, true, :reserved=>UInt32, (), "Execute the homing function")
+const set_auto_leveling = Command(32, true, true, (:is_autoleveling=>UInt8, :accuracy=>Float32), (), "Set automatic leveling")
+const get_auto_leveling = Command(32, false, false, (), :result=>Float32, "Get automatic leveling result")
 
-# # Commands - Handhold teaching
-# const set_hht_trig_mode = Command(40, true, false)
+# Commands - Handhold teaching
+const set_hht_trig_mode = Command(40, true, false, :hht_trig_mode=>UInt64, (), "Set hand-hold teaching mode")
+const get_hht_trig_mode = Command(40, false, false, (), :hht_trig_mode=>UInt64, "Get hand-hold teaching mode")
+const set_hht_trig_output_enabled = Command(41, true, false, :is_enabled=>UInt8, (), "Set status of hand-hold teaching mode")
+const get_hht_trig_output_enabled = Command(41, false, false, (), :is_enabled=>UInt8, "Get status of hand-hold teaching mode")
+const get_hht_trig_output = Command(42, false, false, (), :is_triggered=>UInt8, "Get the status of the hand-hold trigger")
+
+# Commands - End effector
+const set_end_effector_params = Command(60, true, true, (:x_bias=>Float32, :y_bias=>Float32, :z_bias=>Float32), (), "Set the offset of the end effector")
+const get_end_effector_params = Command(60, false, false, (), (:x_bias=>Float32, :y_bias=>Float32, :z_bias=>Float32), "Get the offset of the end effector")
+const set_end_effector_laser = Command(61, true, true, (:enable_ctrl=>UInt8, :on=>UInt8), (), "Set the status of the laser")
+const get_end_effector_laser = Command(61, false, false, (), (:is_ctrl_enabled=>UInt8, :is_on=>UInt8), "Get the status of the laser")
+const set_end_effector_suction_cup = Command(62, true, true, (:is_ctrl_enabled=>UInt8, :is_sucked=>UInt8), (), "Set the status of the suction cup")
+const get_end_effector_suction_cup = Command(62, false, false, (), (:is_ctrl_enabled=>UInt8, :is_sucked=>UInt8), "Get the status of the suction cup")
+const set_end_effector_gripper = Command(63, true, true, (:is_ctrl_enabled=>UInt8, :is_gripped=>UInt8), (), "Set the status of the gripper")
+const get_end_effector_gripper = Command(63, false, false, (), (:is_ctrl_enabled=>UInt8, :is_gripped=>UInt8), "Set the status of the gripper")
+
+# Commands - Jog
+const set_jog_joint_params = Command(70, true, true, (:velocity_J1=>Float32,:velocity_J2=>Float32,:velocity_J3=>Float32,:velocity_J4=>Float32,:acceleration_J1=>Float32,:acceleration_J2=>Float32,:acceleration_J3=>Float32,:acceleration_J4=>Float32), (), "Set the velocity and acceleration of joints in jogging mode")
+const get_jog_joint_params = Command(70, false, false, (), (:velocity_J1=>Float32,:velocity_J2=>Float32,:velocity_J3=>Float32,:velocity_J4=>Float32,:acceleration_J1=>Float32,:acceleration_J2=>Float32,:acceleration_J3=>Float32,:acceleration_J4=>Float32), "Get the velocity and acceleration of joints in jogging mode")
+const set_jog_coordinate_params = Command(71, true, true, (:velocity_x=>Float32,:velocity_y=>Float32,:velocity_z=>Float32,:velocity_r=>Float32,:acceleration_x=>Float32,:acceleration_y=>Float32,:acceleration_z=>Float32,:acceleration_r=>Float32), (), "Set the velocity and acceleration in Cartesian coordinates in jogging mode")
+const get_jog_coordinate_params = Command(71, false, false, (), (:velocity_x=>Float32,:velocity_y=>Float32,:velocity_z=>Float32,:velocity_r=>Float32,:acceleration_x=>Float32,:acceleration_y=>Float32,:acceleration_z=>Float32,:acceleration_r=>Float32), "Get the velocity and acceleration in Cartesian coordinates in jogging mode")
+const set_jog_common_params = Command(72, true, true, (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), (), "Set the velocity and acceleration ratios of the sliding rail")
+const get_jog_common_params = Command(72, false, false, (), (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), "Get the velocity and acceleration ratios of the sliding rail")
+const set_jog_cmd = Command(73, true, true, (:is_joint=>UInt8, :cmd=>UInt8), (), "Execute the jog command in Cartesian coordinates or joints (cmd=0 stop, cmd=1 or 2 for positive or negative jogging in x/J1, cmd=3 or 4 for y/J2, etc)")
+const set_jog_l_params = Command(74, true, true, (:velocity=>Float32, :acceleration=>Float32), (), "Set the velocity and acceleration of the sliding rail in jog mode") # NOTE: there is a discrepancy in the manual regarding the data types and overall length of the message
 
 end
