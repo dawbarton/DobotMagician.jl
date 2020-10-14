@@ -284,6 +284,30 @@ const set_auto_leveling = Command(32, true, true, (:is_autoleveling=>UInt8, :acc
 const get_auto_leveling = Command(32, false, false, (), :result=>Float32, "Get automatic leveling result")
 
 # Commands - Handhold teaching
-const set_hht_trig_mode = Command(40, true, false, :HHT_trig_mode=>UInt64, (), "Set hand-hold teaching mode")
+const set_hht_trig_mode = Command(40, true, false, :hht_trig_mode=>UInt64, (), "Set hand-hold teaching mode")
+const get_hht_trig_mode = Command(40, false, false, (), :hht_trig_mode=>UInt64, "Get hand-hold teaching mode")
+const set_hht_trig_output_enabled = Command(41, true, false, :is_enabled=>UInt8, (), "Set status of hand-hold teaching mode")
+const get_hht_trig_output_enabled = Command(41, false, false, (), :is_enabled=>UInt8, "Get status of hand-hold teaching mode")
+const get_hht_trig_output = Command(42, false, false, (), :is_triggered=>UInt8, "Get the status of the hand-hold trigger")
+
+# Commands - End effector
+const set_end_effector_params = Command(60, true, true, (:x_bias=>Float32, :y_bias=>Float32, :z_bias=>Float32), (), "Set the offset of the end effector")
+const get_end_effector_params = Command(60, false, false, (), (:x_bias=>Float32, :y_bias=>Float32, :z_bias=>Float32), "Get the offset of the end effector")
+const set_end_effector_laser = Command(61, true, true, (:enable_ctrl=>UInt8, :on=>UInt8), (), "Set the status of the laser")
+const get_end_effector_laser = Command(61, false, false, (), (:is_ctrl_enabled=>UInt8, :is_on=>UInt8), (), "Get the status of the laser")
+const set_end_effector_suction_cup = Command(62, true, true, (:is_ctrl_enabled=>UInt8, :is_sucked=>UInt8), (), "Set the status of the suction cup")
+const get_end_effector_suction_cup = Command(62, false, false, (), (:is_ctrl_enabled=>UInt8, :is_sucked=>UInt8), "Get the status of the suction cup")
+const set_end_effector_gripper = Command(63, true, true, (:is_ctrl_enabled=>UInt8, :is_gripped=>UInt8), (), "Set the status of the gripper")
+const get_end_effector_gripper = Command(63, false, false, (), (:is_ctrl_enabled=>UInt8, :is_gripped=>UInt8), "Set the status of the gripper")
+
+# Commands - Jog
+const set_jog_joint_params = Command(70, true, true, (:velocity_J1=>Float32,:velocity_J2=>Float32,:velocity_J3=>Float32,:velocity_J4=>Float32,:acceleration_J1=>Float32,:acceleration_J2=>Float32,:acceleration_J3=>Float32,:acceleration_J4=>Float32), (), "Set the velocity and acceleration of joints in jogging mode")
+const get_jog_joint_params = Command(70, false, false, (), (:velocity_J1=>Float32,:velocity_J2=>Float32,:velocity_J3=>Float32,:velocity_J4=>Float32,:acceleration_J1=>Float32,:acceleration_J2=>Float32,:acceleration_J3=>Float32,:acceleration_J4=>Float32), "Get the velocity and acceleration of joints in jogging mode")
+const set_jog_coordinate_params = Command(71, true, true, (:velocity_x=>Float32,:velocity_y=>Float32,:velocity_z=>Float32,:velocity_r=>Float32,:acceleration_x=>Float32,:acceleration_y=>Float32,:acceleration_z=>Float32,:acceleration_r=>Float32), (), "Set the velocity and acceleration in Cartesian coordinates in jogging mode")
+const get_jog_coordinate_params = Command(71, false, false, (), (:velocity_x=>Float32,:velocity_y=>Float32,:velocity_z=>Float32,:velocity_r=>Float32,:acceleration_x=>Float32,:acceleration_y=>Float32,:acceleration_z=>Float32,:acceleration_r=>Float32), "Get the velocity and acceleration in Cartesian coordinates in jogging mode")
+const set_jog_common_params = Command(72, true, true, (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), (), "Set the velocity and acceleration ratios of the sliding rail")
+const get_jog_common_params = Command(72, false, false, (), (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), "Get the velocity and acceleration ratios of the sliding rail")
+const set_jog_cmd = Command(73, true, true, (:is_joint=>UInt8, :cmd=>UInt8), (), "Execute the jog command in Cartesian coordinates or joints (cmd=1 or 2 for positive or negative jogging in x/J1, cmd=3 or 4 for y/J2, etc)")
+const set_jog_l_params = Command(74, true, true, (:velocity=>Float32, :acceleration=>Float32), (), "Set the velocity and acceleration of the sliding rail in jog mode") # NOTE: there is a discrepancy in the manual regarding the data types and overall length of the message
 
 end
