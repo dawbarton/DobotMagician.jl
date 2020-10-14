@@ -118,8 +118,8 @@ function Command(id, rw, allow_queue, send, receive, description::String)
     return Command{send_types,receive_types,payload_names}(id, rw, allow_queue, description)
 end
 
-function (cmd::Command)(magician::Magician, payload; kwargs...)
-    return execute_command(magician, cmd, payload; kwargs...)
+function (cmd::Command)(magician::Magician, args...; kwargs...)
+    return execute_command(magician, cmd, args...; kwargs...)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", cmd::Command{S,R,P}) where {S,R,P}
@@ -153,7 +153,7 @@ payload_size(payload) = UInt8(2 + sizeof(payload))
 const TIMEOUT_MSG = "Serial port errored or timed out waiting for response"
 
 function execute_command(
-    magician::Magician, cmd::Command{S}, payload::S; queue=false
+    magician::Magician, cmd::Command{S}, payload::S=(); queue=false
 ) where {S}
     # Construct and send the command package
     package = construct_command(cmd, payload, queue)
