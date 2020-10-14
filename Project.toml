@@ -6,7 +6,6 @@ version = "0.1.0"
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 LibSerialPort = "a05a14c7-6e3b-5ba9-90a2-45558833e1df"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 DocStringExtensions = "0.8"
