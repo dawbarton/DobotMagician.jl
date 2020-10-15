@@ -123,7 +123,7 @@ end
 const TIMEOUT_MSG = "Serial port errored or timed out waiting for response"
 
 function execute_command(
-    magician::Magician, cmd::Command{S}, payload::S=(); queue=false
+    magician::Magician, cmd::Command, payload=(); queue=false
 ) where {S}
     # Construct and send the command package
     package = construct_command(cmd, payload, queue)
