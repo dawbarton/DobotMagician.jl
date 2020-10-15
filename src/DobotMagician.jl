@@ -170,10 +170,14 @@ function execute_command(
         throw(ErrorException("Invalid checksum returned"))
     end
     # Unpack the result
-    if queue
-        return read(IOBuffer(payload), UInt64)
+    if !cmd.rw
+        if queue
+            return read(IOBuffer(payload), UInt64)
+        else
+            return unpack_payload(cmd, payload)
+        end
     else
-        return unpack_payload(cmd, payload)
+        return nothing
     end
 end
 
