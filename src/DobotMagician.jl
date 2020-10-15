@@ -116,7 +116,7 @@ function Base.show(io::IO, ::MIME"text/plain", cmd::Command)
             Allow queue: $(cmd.allow_queue)
             Description: $(cmd.description)
             Payload:
-                $(join([string(name)*"::"*string(type) for (name, type) in payload], "\n    "))""",
+                $(join([string(name)*"::"*string(type) for (name, type) in cmd.payload], "\n    "))""",
     )
 end
 
@@ -303,7 +303,7 @@ const get_device_time = Command(4, false, false, (g_systick=UInt32,), "Get devic
 const get_device_id = Command(5, false, false, (device_id=NTuple{3,UInt32},), "Get device ID")
 
 # Commands - Real-time pose
-const get_pose = Command(10, false, false, (xyzr=NTuple{4,Float32}, J1=NTuple{4,Float32}), "Get the real-time pose")
+const get_pose = Command(10, false, false, (xyzr=NTuple{4,Float32}, J=NTuple{4,Float32}), "Get the real-time pose")
 const reset_pose = Command(11, true, false, (manual=UInt8, rear_arm_angle=Float32, front_arm_angle=Float32), "Reset the real-time pose")
 const get_pose_l = Command(13, false, false, (pose_l=Float32,), "Get the real-time pose of the sliding rail")
 
