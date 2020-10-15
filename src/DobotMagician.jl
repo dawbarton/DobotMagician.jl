@@ -358,9 +358,9 @@ const set_ptp_jump_params = Command(82, true, true, (jump_height=Float32, z_limi
 const get_ptp_jump_params = Command(82, false, false, (jump_height=Float32, z_limit=Float32), "Get the lifting height and maximum lifting height in JUMP mode")
 const set_ptp_common_params = Command(83, true, true, (velocity_ratio=Float32, acceleration_ratio=Float32), "Set the velocity and acceleration ratio in PTP mode")
 const get_ptp_common_params = Command(83, false, false, (velocity_ratio=Float32, acceleration_ratio=Float32), "Set the velocity and acceleration ratio in PTP mode")
-const set_ptp_cmd = Command(84, true, true, (ptp_mode=UInt8, x=Float32, y=Float32, z=Float32, r=Float32), "Execute a PTP command (ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE, 6=MOVJ_INC, 7=MOVL_INC, 8=MOVJ_XYZ_INC, 9=JUMP_MOVL_XYZ)")
+const set_ptp_cmd = Command(84, true, true, (ptp_mode=UInt8, position=NTuple{4,Float32}), "Execute a PTP command (ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE, 6=MOVJ_INC, 7=MOVL_INC, 8=MOVJ_XYZ_INC, 9=JUMP_MOVL_XYZ)")
 const set_ptp_l_params = Command(85, true, true, (velocity=Float32, acceleration=Float32), "Set the velocity and acceleration of the sliding rail in PTP mode")
-const set_ptp_with_l_cmd = Command(86, true, true, (ptp_mode=UInt8, x=Float32, y=Float32, z=Float32, r=Float32, l=Float32), "Execute a PTP command with the sliding rail (ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE, 6=MOVJ_INC, 7=MOVL_INC, 8=MOVJ_XYZ_INC, 9=JUMP_MOVL_XYZ)")
+const set_ptp_with_l_cmd = Command(86, true, true, (ptp_mode=UInt8, position=NTuple{5,Float32}), "Execute a PTP command with the sliding rail (ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE, 6=MOVJ_INC, 7=MOVL_INC, 8=MOVJ_XYZ_INC, 9=JUMP_MOVL_XYZ)")
 const set_ptp_jump2_params = Command(87, true, true, (start_jump_height=Float32, end_jump_height=Float32, z_limit=Float32), "Set the extended parameters in JUMP mode")
 const get_ptp_jump2_params = Command(87, false, false, (start_jump_height=Float32, end_jump_height=Float32, z_limit=Float32), "Get the extended parameters in JUMP mode")
 
