@@ -170,12 +170,10 @@ function execute_command(
         throw(ErrorException("Invalid checksum returned"))
     end
     # Unpack the result
-    if !cmd.rw
-        if queue
-            return read(IOBuffer(payload), UInt64)
-        else
-            return unpack_payload(cmd, payload)
-        end
+    if queue
+        return read(IOBuffer(payload), UInt64)
+    elseif !cmd.rw
+        return unpack_payload(cmd, payload)
     else
         return nothing
     end
@@ -340,18 +338,18 @@ const set_end_effector_gripper = Command(63, true, true, (is_ctrl_enabled=UInt8,
 const get_end_effector_gripper = Command(63, false, false, (is_ctrl_enabled=UInt8, is_gripped=UInt8), "Set the status of the gripper")
 
 # Commands - Jog
-const set_jog_joint_params = Command(70, true, true, (velocity=NTuple{4,Float32},acceleration=NTuple{4,Float32}), "Set the velocity and acceleration of joints in jogging mode")
-const get_jog_joint_params = Command(70, false, false, (velocity=NTuple{4,Float32},acceleration=NTuple{4,Float32}), "Get the velocity and acceleration of joints in jogging mode")
-const set_jog_coordinate_params = Command(71, true, true, (velocity=NTuple{4,Float32},acceleration=NTuple{4,Float32}), "Set the velocity and acceleration in Cartesian coordinates in jogging mode")
-const get_jog_coordinate_params = Command(71, false, false, (velocity=NTuple{4,Float32},acceleration=NTuple{4,Float32}), "Get the velocity and acceleration in Cartesian coordinates in jogging mode")
+const set_jog_joint_params = Command(70, true, true, (velocity=NTuple{4,Float32}, acceleration=NTuple{4,Float32}), "Set the velocity and acceleration of joints in jogging mode")
+const get_jog_joint_params = Command(70, false, false, (velocity=NTuple{4,Float32}, acceleration=NTuple{4,Float32}), "Get the velocity and acceleration of joints in jogging mode")
+const set_jog_coordinate_params = Command(71, true, true, (velocity=NTuple{4,Float32}, acceleration=NTuple{4,Float32}), "Set the velocity and acceleration in Cartesian coordinates in jogging mode")
+const get_jog_coordinate_params = Command(71, false, false, (velocity=NTuple{4,Float32}, acceleration=NTuple{4,Float32}), "Get the velocity and acceleration in Cartesian coordinates in jogging mode")
 const set_jog_common_params = Command(72, true, true, (velocity_ratio=Float32, acceleration_ratio=Float32), "Set the velocity and acceleration ratios of the sliding rail")
 const get_jog_common_params = Command(72, false, false, (velocity_ratio=Float32, acceleration_ratio=Float32), "Get the velocity and acceleration ratios of the sliding rail")
 const set_jog_cmd = Command(73, true, true, (is_joint=UInt8, cmd=UInt8), "Execute the jog command in Cartesian coordinates or joints (cmd=0 stop, cmd=1 or 2 for positive or negative jogging in x/J1, cmd=3 or 4 for y/J2, etc)")
 const set_jog_l_params = Command(74, true, true, (velocity=Float32, acceleration=Float32), "Set the velocity and acceleration of the sliding rail in jog mode") # NOTE: there is a discrepancy in the manual regarding the data types and overall length of the message
 
 # Commands - PTP
-const set_ptp_joint_params = Command(80, true, true, (velocity=NTuple{4,Float32},acceleration=NTuple{4,Float32}), "Set the velocity and acceleration of the joint coordinate axes in PTP mode")
-const get_ptp_joint_params = Command(80, false, false, (velocity=NTuple{4,Float32},acceleration=NTuple{4,Float32}), "Get the velocity and acceleration of the joint coordinate axes in PTP mode")
+const set_ptp_joint_params = Command(80, true, true, (velocity=NTuple{4,Float32}, acceleration=NTuple{4,Float32}), "Set the velocity and acceleration of the joint coordinate axes in PTP mode")
+const get_ptp_joint_params = Command(80, false, false, (velocity=NTuple{4,Float32}, acceleration=NTuple{4,Float32}), "Get the velocity and acceleration of the joint coordinate axes in PTP mode")
 const set_ptp_coordinate_params = Command(81, true, true, (xyz_velocity=Float32, r_velocity=Float32, xyz_acceleration=Float32, r_acceleration=Float32), "Set the velocity and acceleration of the Cartesian coordinate axes in PTP mode")
 const get_ptp_coordinate_params = Command(81, false, false, (xyz_velocity=Float32, r_velocity=Float32, xyz_acceleration=Float32, r_acceleration=Float32), "Get the velocity and acceleration of the Cartesian coordinate axes in PTP mode")
 const set_ptp_jump_params = Command(82, true, true, (jump_height=Float32, z_limit=Float32), "Set the lifting height and maximum lifting height in JUMP mode")

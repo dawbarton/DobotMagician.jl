@@ -53,7 +53,21 @@ using ..DobotMagician:
     set_jog_common_params,
     get_jog_common_params,
     set_jog_cmd,
-    set_jog_l_params
+    set_jog_l_params,
+    # Commands - PTP
+    set_ptp_joint_params,
+    get_ptp_joint_params,
+    set_ptp_coordinate_params,
+    get_ptp_coordinate_params,
+    set_ptp_jump_params,
+    get_ptp_jump_params,
+    set_ptp_common_params,
+    get_ptp_common_params,
+    set_ptp_cmd,
+    set_ptp_l_params,
+    set_ptp_with_l_cmd,
+    set_ptp_jump2_params,
+    get_ptp_jump2_params
 
 export
     # Commands - Device information
@@ -102,6 +116,20 @@ export
     set_jog_common_params,
     get_jog_common_params,
     set_jog_cmd,
-    set_jog_l_params
+    set_jog_l_params,
+    # Commands - PTP
+    set_ptp_joint_params,
+    get_ptp_joint_params,
+    set_ptp_coordinate_params,
+    get_ptp_coordinate_params,
+    set_ptp_jump_params,
+    get_ptp_jump_params,
+    set_ptp_common_params,
+    get_ptp_common_params,
+    set_ptp_cmd,
+    set_ptp_l_params,
+    set_ptp_with_l_cmd,
+    set_ptp_jump2_params,
+    get_ptp_jump2_params
 
 end
