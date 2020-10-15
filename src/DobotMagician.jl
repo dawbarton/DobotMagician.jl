@@ -97,7 +97,9 @@ struct Command{P}
 end
 
 function Command(id, rw, allow_queue, payload, description)
-    return Command{Tuple{values(payload)...}}(id, rw, allow_queue, description, [(name, type) for (name, type) in pairs(payload)])
+    return Command{Tuple{values(payload)...}}(
+        id, rw, allow_queue, description, [(name, type) for (name, type) in pairs(payload)]
+    )
 end
 
 function (cmd::Command)(magician::Magician, args...; kwargs...)
@@ -206,7 +208,12 @@ function _write_var_as_type(T::Type{<:Tuple}, var, varsym)
     else
         body = quote end
         for (i, TT) in enumerate(T.parameters)
-            push!(body.args, _write_var_as_type(TT, var <: Tuple ? var.parameters[i] : eltype(var), :($(varsym)[$i])))
+            push!(
+                body.args,
+                _write_var_as_type(
+                    TT, var <: Tuple ? var.parameters[i] : eltype(var), :($(varsym)[$i])
+                ),
+            )
         end
         push!(body.args, :(nothing))
         return body
