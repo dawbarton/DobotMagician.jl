@@ -3,9 +3,6 @@ module DobotMagician
 using LibSerialPort
 using DocStringExtensions
 
-export Magician
-export connect, disconnect
-
 const Port = LibSerialPort.Port
 
 struct Magician
@@ -309,5 +306,24 @@ const set_jog_common_params = Command(72, true, true, (:velocity_ratio=>Float32,
 const get_jog_common_params = Command(72, false, false, (), (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), "Get the velocity and acceleration ratios of the sliding rail")
 const set_jog_cmd = Command(73, true, true, (:is_joint=>UInt8, :cmd=>UInt8), (), "Execute the jog command in Cartesian coordinates or joints (cmd=0 stop, cmd=1 or 2 for positive or negative jogging in x/J1, cmd=3 or 4 for y/J2, etc)")
 const set_jog_l_params = Command(74, true, true, (:velocity=>Float32, :acceleration=>Float32), (), "Set the velocity and acceleration of the sliding rail in jog mode") # NOTE: there is a discrepancy in the manual regarding the data types and overall length of the message
+
+# Commands - PTP
+const set_ptp_joint_params = Command(80, true, true, (:velocity_J1=>Float32,:velocity_J2=>Float32,:velocity_J3=>Float32,:velocity_J4=>Float32,:acceleration_J1=>Float32,:acceleration_J2=>Float32,:acceleration_J3=>Float32,:acceleration_J4=>Float32), (), "Set the velocity and acceleration of the joint coordinate axes in PTP mode")
+const get_ptp_joint_params = Command(80, false, false, (), (:velocity_J1=>Float32,:velocity_J2=>Float32,:velocity_J3=>Float32,:velocity_J4=>Float32,:acceleration_J1=>Float32,:acceleration_J2=>Float32,:acceleration_J3=>Float32,:acceleration_J4=>Float32), "Get the velocity and acceleration of the joint coordinate axes in PTP mode")
+const set_ptp_coordinate_params = Command(81, true, true, (:xyz_velocity=>Float32, :r_velocity=>Float32, :xyz_acceleration=>Float32, :r_acceleration=>Float32), (), "Set the velocity and acceleration of the Cartesian coordinate axes in PTP mode")
+const get_ptp_coordinate_params = Command(81, false, false, (), (:xyz_velocity=>Float32, :r_velocity=>Float32, :xyz_acceleration=>Float32, :r_acceleration=>Float32), "Get the velocity and acceleration of the Cartesian coordinate axes in PTP mode")
+const set_ptp_jump_params = Command(82, true, true, (:jump_height=>Float32, :z_limit=>Float32), (), "Set the lifting height and maximum lifting height in JUMP mode")
+const get_ptp_jump_params = Command(82, false, false, (), (:jump_height=>Float32, :z_limit=>Float32), "Get the lifting height and maximum lifting height in JUMP mode")
+const set_ptp_common_params = Command(83, true, true, (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), (), "Set the velocity and acceleration ratio in PTP mode")
+const get_ptp_common_params = Command(83, false, false, (:velocity_ratio=>Float32, :acceleration_ratio=>Float32), (), "Set the velocity and acceleration ratio in PTP mode")
+const set_ptp_cmd = Command(84, true, true, (:ptp_mode=>UInt8, :x=>Float32, :y=>Float32, :z=>Float32, :r=>Float32), (), "Execute a PTP command (ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE, 6=MOVJ_INC, 7=MOVL_INC, 8=MOVJ_XYZ_INC, 9=JUMP_MOVL_XYZ)")
+const set_ptp_l_params = Command(85, true, true, (:velocity=>Float32, :acceleration=>Float32), (), "Set the velocity and acceleration of the sliding rail in PTP mode")
+const set_ptp_with_l_cmd = Command(86, true, true, (:ptp_mode=>UInt8, :x=>Float32, :y=>Float32, :z=>Float32, :r=>Float32, :l=>Float32), (), "Execute a PTP command with the sliding rail (ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE, 6=MOVJ_INC, 7=MOVL_INC, 8=MOVJ_XYZ_INC, 9=JUMP_MOVL_XYZ)")
+const set_ptp_jump2_params = Command(87, true, true, (:start_jump_height=>Float32, :end_jump_height=>Float32, :z_limit=>Float32), (), "Set the extended parameters in JUMP mode")
+const get_ptp_jump2_params = Command(87, false, false, (), (:start_jump_height=>Float32, :end_jump_height=>Float32, :z_limit=>Float32), "Get the extended parameters in JUMP mode")
+
+#! format: on
+
+include("Direct.jl")
 
 end
