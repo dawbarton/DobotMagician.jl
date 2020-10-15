@@ -204,6 +204,50 @@ function execute_command(
     end
 end
 
+write_var_as_type(io::IO, T::Type, var) = (write(io, convert(T, var)); nothing)
+
+function write_var_as_type(io::IO, T::Type{String}, var)
+    str = string(var)
+    if !isascii(str)
+        throw(ArgumentError("Strings must only use ASCII characters"))
+    end
+    if !isempty(str) && str[end] != '\0'
+        str *= '\0'
+    end
+    write(io, str)
+    return nothing
+end
+
+function _write_var_as_type_body(T::Type{<:Tuple})
+    body = quote end
+    for (i, TT) in enumerate(T.parameters)
+        push!(body.args, :(write_var_as_type(io, $(TT), var[$i])))
+    end
+    push!(body.args, :(return nothing))
+    @show body
+    return body
+end
+
+function _write_var_as_type(T::Type{<:Tuple}, var)
+    if T isa UnionAll
+        # body of the UnionAll with an NTuple is Tuple{Vararg{innerT, N}}
+        body = T.body
+        if !(body isa UnionAll) && (body.parameters[1] <: Vararg)
+            innerT = body.parameters[1].parameters[1]
+            N = var <: Tuple ? length(var.parameters) : length(var)  # allows for StaticArrays
+            return _write_var_as_type_body(NTuple{N,innerT})
+        else
+            throw(ArgumentError("Got a UnionAll that is not an NTuple with unbound N (only)"))
+        end
+    else
+        return _write_var_as_type_body(T)
+    end
+end
+
+@generated function write_var_as_type(io::IO, T::Type{<:Tuple}, var)
+    return _write_var_as_type(T.parameters[1], var)
+end
+
 function construct_command(cmd::Command{S}, payload::S, queue::Bool) where {S}
     # Uses dispatch to enforce correct payload types
     (!cmd.allow_queue && queue) && throw(ArgumentError("Command cannot be queued"))
