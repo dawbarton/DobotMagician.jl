@@ -93,7 +93,7 @@ struct Command{P}
     rw::Bool
     allow_queue::Bool
     description::String
-    payload::Vector{Tuple{Symbol,DataType}}
+    payload::Vector{Union{Tuple{Symbol,DataType},Tuple{Symbol,UnionAll}}}
 end
 
 function Command(id, rw, allow_queue, payload, description)
