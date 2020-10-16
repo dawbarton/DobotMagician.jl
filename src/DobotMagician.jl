@@ -365,8 +365,8 @@ const set_ptp_po_with_l_cmd = Command(89, true, true, (ptp_mode=UInt8, position=
 # Commands - CP
 const set_cp_params = Command(90, true, true, (plan_acc=Float32, junction_vel=Float32, acc_period=Float32, real_time_track=UInt8), "Set the parameters of continuous trajectory; acc_period is the maximum actual acceleration in non-real time mode and the interpolation period in real-time mode")
 const get_cp_params = Command(90, false, false, (plan_acc=Float32, junction_vel=Float32, acc_period=Float32, real_time_track=UInt8), "Get the parameters of continuous trajectory; acc_period is the maximum actual acceleration in non-real time mode and the interpolation period in real-time mode")
-const set_cp_cmd = Command(91, true, true, (cp_mode=UInt8, xyz=NTuple{3,Float32}, velocity=Float32), "Execute the CP command (velocity is reserved/ignored?)")
-const set_cp_le_cmd = Command(92, true, true, (cp_mode=UInt8, xyz=NTuple{3,Float32}, power=Float32), "Execute the CP command with laser engraving")
+const set_cp_cmd = Command(91, true, true, (cp_mode=UInt8, xyz=NTuple{3,Float32}, velocity=Float32), "Execute the CP command (cp_mode=0 for relative motion or cp_mode=1 for absolute motion; velocity is reserved/ignored?)")
+const set_cp_le_cmd = Command(92, true, true, (cp_mode=UInt8, xyz=NTuple{3,Float32}, power=Float32), "Execute the CP command with laser engraving (cp_mode=0 for relative motion or cp_mode=1 for absolute motion)")
 
 # Commands - Queued execution control commands
 const set_queued_cmd_start_exec = Command(240, true, false, (), "Start the command queue")
