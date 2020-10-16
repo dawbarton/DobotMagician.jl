@@ -359,6 +359,14 @@ const set_ptp_l_params = Command(85, true, true, (velocity=Float32, acceleration
 const set_ptp_with_l_cmd = Command(86, true, true, (ptp_mode=UInt8, position=NTuple{5,Float32}), "Execute a PTP command with the sliding rail (ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE, 6=MOVJ_INC, 7=MOVL_INC, 8=MOVJ_XYZ_INC, 9=JUMP_MOVL_XYZ)")
 const set_ptp_jump2_params = Command(87, true, true, (start_jump_height=Float32, end_jump_height=Float32, z_limit=Float32), "Set the extended parameters in JUMP mode")
 const get_ptp_jump2_params = Command(87, false, false, (start_jump_height=Float32, end_jump_height=Float32, z_limit=Float32), "Get the extended parameters in JUMP mode")
+const set_ptp_po_cmd = Command(88, true, true, (ptp_mode=UInt8, position=NTuple{4,Float32}, po=NTuple{N,Tuple{UInt8,UInt16,UInt8}} where N), "Execute a PTP command while manipulating the I/O at a certain point (po=(ratio, address, level))")
+const set_ptp_po_with_l_cmd = Command(89, true, true, (ptp_mode=UInt8, position=NTuple{5,Float32}, po=NTuple{N,Tuple{UInt8,UInt16,UInt8}} where N), "Execute a PTP command with the sliding rail while manipulating the I/O at a certain point (po=(ratio, address, level))")
+
+# Commands - CP
+const set_cp_params = Command(90, true, true, (plan_acc=Float32, junction_vel=Float32, acc_period=Float32, real_time_track=UInt8), "Set the parameters of continuous trajectory; acc_period is the maximum actual acceleration in non-real time mode and the interpolation period in real-time mode")
+const get_cp_params = Command(90, false, false, (plan_acc=Float32, junction_vel=Float32, acc_period=Float32, real_time_track=UInt8), "Get the parameters of continuous trajectory; acc_period is the maximum actual acceleration in non-real time mode and the interpolation period in real-time mode")
+const set_cp_cmd = Command(91, true, true, (cp_mode=UInt8, xyz=NTuple{3,Float32}, velocity=Float32), "Execute the CP command (velocity is reserved/ignored?)")
+const set_cp_le_cmd = Command(92, true, true, (cp_mode=UInt8, xyz=NTuple{3,Float32}, power=Float32), "Execute the CP command with laser engraving")
 
 # Commands - Queued execution control commands
 const set_queued_cmd_start_exec = Command(240, true, false, (), "Start the command queue")
