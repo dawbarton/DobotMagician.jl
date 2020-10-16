@@ -122,9 +122,7 @@ end
 
 const TIMEOUT_MSG = "Serial port errored or timed out waiting for response"
 
-function execute_command(
-    magician::Magician, cmd::Command, payload=(); queue=false
-) where {S}
+function execute_command(magician::Magician, cmd::Command, payload=(); queue=false)
     # Construct and send the command package
     package = construct_command(cmd, payload, queue)
     sp_blocking_write(magician.port, package, magician.timeout[])
@@ -361,6 +359,15 @@ const set_ptp_l_params = Command(85, true, true, (velocity=Float32, acceleration
 const set_ptp_with_l_cmd = Command(86, true, true, (ptp_mode=UInt8, position=NTuple{5,Float32}), "Execute a PTP command with the sliding rail (ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE, 6=MOVJ_INC, 7=MOVL_INC, 8=MOVJ_XYZ_INC, 9=JUMP_MOVL_XYZ)")
 const set_ptp_jump2_params = Command(87, true, true, (start_jump_height=Float32, end_jump_height=Float32, z_limit=Float32), "Set the extended parameters in JUMP mode")
 const get_ptp_jump2_params = Command(87, false, false, (start_jump_height=Float32, end_jump_height=Float32, z_limit=Float32), "Get the extended parameters in JUMP mode")
+
+# Commands - Queued execution control commands
+const set_queued_cmd_start_exec = Command(240, true, false, (), "Start the command queue")
+const set_queued_cmd_stop_exec = Command(241, true, false, (), "Stop the command queue")
+const set_queued_cmd_force_stop_exec = Command(242, true, false, (), "Forcibly stop the command queue")
+const set_queued_cmd_start_download = Command(243, true, false, (total_loop=UInt32, line_per_loop=UInt32), "Start downloading")
+const set_queued_cmd_stop_download = Command(244, true, false, (), "Stop downloading")
+const set_queued_cmd_clear = Command(245, true, false, (), "Clear the command queue")
+const get_queued_cmd_current_index = Command(246, false, false, (queued_cmd_current_index=UInt64,), "Get the command index")
 
 #! format: on
 
