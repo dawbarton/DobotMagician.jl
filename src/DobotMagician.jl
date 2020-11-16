@@ -368,6 +368,9 @@ const get_cp_params = Command(90, false, false, (plan_acc=Float32, junction_vel=
 const set_cp_cmd = Command(91, true, true, (cp_mode=UInt8, xyz=NTuple{3,Float32}, velocity=Float32), "Execute the CP command (cp_mode=0 for relative motion or cp_mode=1 for absolute motion; velocity is reserved/ignored?)")
 const set_cp_le_cmd = Command(92, true, true, (cp_mode=UInt8, xyz=NTuple{3,Float32}, power=Float32), "Execute the CP command with laser engraving (cp_mode=0 for relative motion or cp_mode=1 for absolute motion)")
 
+# Commands - Wait
+const set_wait_cmd = Command(110, true, true, (timeout=UInt32,), "Wait the specified number of milliseconds")
+
 # Commands - Queued execution control commands
 const set_queued_cmd_start_exec = Command(240, true, false, (), "Start the command queue")
 const set_queued_cmd_stop_exec = Command(241, true, false, (), "Stop the command queue")
@@ -380,5 +383,6 @@ const get_queued_cmd_current_index = Command(246, false, false, (queued_cmd_curr
 #! format: on
 
 include("Direct.jl")
+include("Simple.jl")
 
 end
