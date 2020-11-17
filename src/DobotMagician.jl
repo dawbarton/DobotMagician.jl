@@ -8,6 +8,7 @@ using LibSerialPort.Lib:
     sp_get_port_usb_vid_pid,
     sp_get_port_name,
     sp_free_port_list,
+    sp_get_port_by_name,
     sp_open,
     sp_set_baudrate,
     sp_set_bits,
