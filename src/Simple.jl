@@ -2,8 +2,8 @@ module Simple
 
 using StaticArrays: FieldVector
 
-using .DobotMagician: Magician
-using .Direct
+using ..DobotMagician: Magician
+using ..Direct
 
 export XYZR, XYZRL, Joint, JointL, MoveMode, MOVJ, MOVL, JUMP
 export move_to, rmove_to, pose, pose_l, end_effector, laser, gripper, suction_cup, wait

@@ -6,11 +6,13 @@ version = "0.1.0"
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 LibSerialPort = "a05a14c7-6e3b-5ba9-90a2-45558833e1df"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 DocStringExtensions = "0.8"
 LibSerialPort = "0.4, 0.5"
-julia = "1.4"
+StaticArrays = "0.10, 0.11, 0.12"
+julia = "1.4, 1.5"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
