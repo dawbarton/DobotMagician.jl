@@ -114,12 +114,12 @@ end
 
 Close the serial port to the Dobot Magician.
 """
-function disconnect(magician::Magician)
+function disconnect(dobot::Magician)
     if dobot.isopen
-        sp_close(magician.port)
+        sp_close(dobot.port)
         dobot.isopen = false
     end
-    return nothing
+    return dobot
 end
 
 """
