@@ -6,7 +6,7 @@ using LibSerialPort.Lib:
     sp_list_ports,
     sp_get_port_transport,
     sp_get_port_usb_vid_pid,
-    sp_copy_port,
+    sp_get_port_name,
     sp_free_port_list,
     sp_open,
     sp_set_baudrate,
@@ -26,11 +26,32 @@ const Port = LibSerialPort.Lib.SPPort
 struct Magician
     port::Port
     timeout::Base.RefValue{Int}
+    isopen::Base.RefValue{Bool}
     function Magician(port::Port, timeout::Int)
-        return new(port, Ref(timeout))
+        dobot = new(port, Ref(timeout), Ref(false))
+        finalizer(destroy!, dobot)
+        connect(dobot)
+        return dobot
     end
 end
-Magician(port::Port) = Magician(port, 1000)  # default timeout 1000ms
+
+function Magician(port::AbstractString; timeout=1000)
+    return Magician(sp_get_port_by_name(port), timeout)
+end
+
+function Magician(; kwargs...)
+    port = find_magician()
+    if port === nothing
+        throw(ErrorException("Dobot Magician not found"))
+    else
+        return Magician(port; kwargs...)
+    end
+end
+
+function destroy!(dobot::Magician)
+    disconnect(dobot)
+    sp_free_port(magician.port)
+end
 
 """
     $(SIGNATURES)
@@ -44,7 +65,7 @@ appropriate interface is found.
 # Returns
 - `Union{Port, Nothing}`
 """
-function find_port(; nports_guess=64)
+function find_magician(; nports_guess=64)
     dobot_port = nothing
     ports = sp_list_ports()
     for port in unsafe_wrap(Array, ports, nports_guess; own=false)
@@ -52,7 +73,7 @@ function find_port(; nports_guess=64)
             break
         elseif sp_get_port_transport(port) == SP_TRANSPORT_USB
             if sp_get_port_usb_vid_pid(port) == (0x10c4, 0xea60)
-                dobot_port = sp_copy_port(port)
+                dobot_port = sp_get_port_name(port)
                 break
             end
         end
@@ -64,42 +85,36 @@ end
 """
     $(SIGNATURES)
 
-Connect to the specified serial port interface of a Dobot Magician.
+Open the serial port to connect to the Dobot Magician.
 
 # Returns
 - `Magician`: a connection to the Dobot Magician.
 """
-function connect(port::Port)
-    sp_open(port, SP_MODE_READ_WRITE)
+function connect(dobot::Magician)
+    if dobot.isopen[]
+        disconnect(dobot)
+    end
+    sp_open(dobot.port, SP_MODE_READ_WRITE)
+    dobot.isopen[] = true
     # Values taken from the Dobot Magician Communication Protocol document
-    sp_set_baudrate(port, 115200)
-    sp_set_bits(port, 8)
-    sp_set_stopbits(port, 1)
-    sp_set_parity(port, SP_PARITY_NONE)
-    sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE)
-    return Magician(port)
+    sp_set_baudrate(dobot.port, 115200)
+    sp_set_bits(dobot.port, 8)
+    sp_set_stopbits(dobot.port, 1)
+    sp_set_parity(dobot.port, SP_PARITY_NONE)
+    sp_set_flowcontrol(dobot.port, SP_FLOWCONTROL_NONE)
+    return dobot
 end
 
 """
     $(SIGNATURES)
 
-Connect to the serial port interface of a Dobot Magician. Available serial ports are
-inspected to find the correct one.
-
-# Returns
-- `Port`: the serial port that was opened.
-"""
-connect(; kwargs...) = connect(find_port(; kwargs...))
-connect(::Nothing) = throw(ErrorException("Dobot interface not found"))
-
-"""
-    $(SIGNATURES)
-
-Disconnect the specified Dobot Magician.
+Close the serial port to the Dobot Magician.
 """
 function disconnect(magician::Magician)
-    sp_close(magician.port)
-    sp_free_port(magician.port)
+    if dobot.isopen[]
+        sp_close(magician.port)
+        dobot.isopen[] = false
+    end
     return nothing
 end
 

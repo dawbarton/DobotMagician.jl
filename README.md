@@ -24,7 +24,7 @@ using DobotMagician
 using DobotMagician.Direct
 
 # Connect to the Dobot (automatically detect the port)
-dobot = DobotMagician.connect()
+dobot = DobotMagician.Magician()
 
 # Get the Dobot version
 ver = get_device_version(dobot)
@@ -68,7 +68,7 @@ using DobotMagician
 using DobotMagician.Simple
 
 # Connect to the Dobot (automatically detect the port)
-dobot = DobotMagician.connect()
+dobot = DobotMagician.Magician()
 
 # Move the arm (linear motion, cartesian end point)
 move_to(dobot, XYZR(100, 100, 0, 0))
