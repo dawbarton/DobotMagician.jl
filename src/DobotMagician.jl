@@ -54,7 +54,7 @@ end
 
 function destroy!(dobot::Magician)
     disconnect(dobot)
-    sp_free_port(magician.port)
+    sp_free_port(dobot.port)
 end
 
 """
