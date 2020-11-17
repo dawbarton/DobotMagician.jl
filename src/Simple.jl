@@ -6,7 +6,7 @@ using ..DobotMagician: Magician
 using ..Direct
 
 export XYZR, XYZRL, Joint, JointL, MoveMode, MOVJ, MOVL, JUMP
-export move_to, rmove_to, pose, pose_l, end_effector, laser, gripper, suction_cup, wait
+export move_to, rmove_to, pose, pose_l, end_effector, laser, gripper, suction_cup, wait_for
 
 """
     XYZR
@@ -251,10 +251,10 @@ function suction_cup(dobot::Magician, status::Bool)
 end
 
 """
-    wait(dobot, timeout; queue=false)
+    wait_for(dobot, timeout; queue=false)
 
 Wait for `timeout` milliseconds.
 """
-wait(dobot::Magician, timeout::Integer) = set_wait_cmd(dobot, (timeout,))
+wait_for(dobot::Magician, timeout::Integer; queue=false) = set_wait_cmd(dobot, (timeout,); queue=queue)
 
 end  # module
