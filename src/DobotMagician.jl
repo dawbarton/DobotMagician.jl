@@ -3,6 +3,9 @@ module DobotMagician
 using LibSerialPort: LibSerialPort
 using LibSerialPort.Lib:
     SP_TRANSPORT_USB,
+    SP_MODE_READ_WRITE,
+    SP_PARITY_NONE,
+    SP_FLOWCONTROL_NONE,
     sp_list_ports,
     sp_get_port_transport,
     sp_get_port_usb_vid_pid,
