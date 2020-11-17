@@ -1,9 +1,27 @@
 module DobotMagician
 
-using LibSerialPort
-using DocStringExtensions
+using LibSerialPort: LibSerialPort
+using LibSerialPort.Lib:
+    SP_TRANSPORT_USB,
+    sp_list_ports,
+    sp_get_port_transport,
+    sp_get_port_usb_vid_pid,
+    sp_copy_port,
+    sp_free_port_list,
+    sp_open,
+    sp_set_baudrate,
+    sp_set_bits,
+    sp_set_stopbits,
+    sp_set_parity,
+    sp_set_flowcontrol,
+    sp_close,
+    sp_free_port,
+    sp_blocking_write,
+    sp_blocking_read,
+    sp_drain
+using DocStringExtensions: SIGNATURES
 
-const Port = LibSerialPort.Port
+const Port = LibSerialPort.Lib.SPPort
 
 struct Magician
     port::Port
