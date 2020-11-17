@@ -24,12 +24,12 @@ using DocStringExtensions: SIGNATURES
 
 const Port = LibSerialPort.Lib.Port
 
-struct Magician
+mutable struct Magician
     port::Port
-    timeout::Base.RefValue{Int}
-    isopen::Base.RefValue{Bool}
-    function Magician(port::Port, timeout::Int)
-        dobot = new(port, Ref(timeout), Ref(false))
+    timeout::Int32
+    isopen::Bool
+    function Magician(port::Port, timeout::Integer)
+        dobot = new(port, timeout, false)
         finalizer(destroy!, dobot)
         connect(dobot)
         return dobot
@@ -92,11 +92,11 @@ Open the serial port to connect to the Dobot Magician.
 - `Magician`: a connection to the Dobot Magician.
 """
 function connect(dobot::Magician)
-    if dobot.isopen[]
+    if dobot.isopen
         disconnect(dobot)
     end
     sp_open(dobot.port, SP_MODE_READ_WRITE)
-    dobot.isopen[] = true
+    dobot.isopen = true
     # Values taken from the Dobot Magician Communication Protocol document
     sp_set_baudrate(dobot.port, 115200)
     sp_set_bits(dobot.port, 8)
@@ -112,9 +112,9 @@ end
 Close the serial port to the Dobot Magician.
 """
 function disconnect(magician::Magician)
-    if dobot.isopen[]
+    if dobot.isopen
         sp_close(magician.port)
-        dobot.isopen[] = false
+        dobot.isopen = false
     end
     return nothing
 end
