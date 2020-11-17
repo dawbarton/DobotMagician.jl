@@ -22,7 +22,7 @@ using LibSerialPort.Lib:
     sp_drain
 using DocStringExtensions: SIGNATURES
 
-const Port = LibSerialPort.Lib.SPPort
+const Port = LibSerialPort.Lib.Port
 
 struct Magician
     port::Port
