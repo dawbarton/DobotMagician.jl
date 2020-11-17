@@ -5,13 +5,16 @@ using StaticArrays: FieldVector
 using .DobotMagician: Magician
 using .Direct
 
+export XYZR, XYZRL, Joint, JointL, MoveMode, MOVJ, MOVL, JUMP
+export move_to, rmove_to, pose, pose_l, end_effector, laser, gripper, suction_cup, wait
+
 """
     XYZR
 
 A structure to represent Cartesian coordinates `(x, y, z)` plus the end effector rotation
 `r`.
 """
-struct XYZR <: FieldVector{4, Float32}
+struct XYZR <: FieldVector{4,Float32}
     x::Float32
     y::Float32
     z::Float32
@@ -24,7 +27,7 @@ end
 A structure to represent Cartesian coordinates `(x, y, z)` plus the end effector rotation
 `r` and the sliding rail displacement `l`.
 """
-struct XYZRL <: FieldVector{5, Float32}
+struct XYZRL <: FieldVector{5,Float32}
     x::Float32
     y::Float32
     z::Float32
@@ -37,7 +40,7 @@ end
 
 A structure to represent joint coordinates `(J1, J2, J3, J4)`.
 """
-struct Joint <: FieldVector{4, Float32}
+struct Joint <: FieldVector{4,Float32}
     j1::Float32
     j2::Float32
     j3::Float32
@@ -50,7 +53,7 @@ end
 A structure to represent joint coordinates `(J1, J2, J3, J4)` plus the sliding rail
 displacement `l`.
 """
-struct JointL <: FieldVector{5, Float32}
+struct JointL <: FieldVector{5,Float32}
     j1::Float32
     j2::Float32
     j3::Float32
@@ -183,7 +186,7 @@ Enable control of a particular end effector. Valid values for `effector` are
 """
 function end_effector(dobot::Magician, effector::Symbol, ctrl::Bool=true)
     if effector === :laser
-        set_end_effector_laser(dobot, (UInt8(ctrl),0))
+        set_end_effector_laser(dobot, (UInt8(ctrl), 0))
     elseif effector === :gripper
         set_end_effector_gripper(dobot, (UInt8(ctrl), 0))
     elseif effector === :suction_cup
@@ -243,7 +246,9 @@ end
 
 Turn the suction_cup on or off.
 """
-suction_cup(dobot::Magician, status::Bool) = set_end_effector_suction_cup(dobot, (1, UInt8(status)))
+function suction_cup(dobot::Magician, status::Bool)
+    return set_end_effector_suction_cup(dobot, (1, UInt8(status)))
+end
 
 """
     wait(dobot, timeout; queue=false)
