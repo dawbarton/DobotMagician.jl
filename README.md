@@ -30,16 +30,17 @@ dobot = DobotMagician.Magician()
 ver = get_device_version(dobot)
 
 # Move the arm (mode 2=MOVL_XYZ: linear motion, cartesian end point)
-set_ptp_cmd(dobot, (2, (100, 100, 0, 0)))
+set_ptp_cmd(dobot, (2, (200, 0, 0, 0)))
 sleep(2)
 
 # Turn on the suction cup
 set_end_effector_suction_cup(dobot, (1, 1))
 
-# Move the arm (queue the commands so they happen sequentially)
-set_ptp_cmd(dobot, (2, (100, 100, 10, 0)); queue=true)
-set_ptp_cmd(dobot, (2, (50, 100, 10, 0)); queue=true)
-set_ptp_cmd(dobot, (2, (50, 100, 0, 0)); queue=true)
+# Move the arm (mode 7=MOVL_INC: relative linear motion, cartesian end point)
+# Queue the commands so they happen sequentially
+set_ptp_cmd(dobot, (7, (20, 0, 0, 0)); queue=true)
+set_ptp_cmd(dobot, (7, (0, 20, 0, 0)); queue=true)
+set_ptp_cmd(dobot, (7, (0, 0, 20, 0)); queue=true)
 
 # Turn off the suction cup
 set_end_effector_suction_cup(dobot, (1, 0); queue=true)
@@ -57,7 +58,7 @@ To use the simple interface, import the package and the `Simple` submodule. Curr
 - `laser`
 - `gripper`
 - `suction_cup`
-- `wait`
+- `wait_for`
 
 Each has a docstring.
 
@@ -71,16 +72,17 @@ using DobotMagician.Simple
 dobot = DobotMagician.Magician()
 
 # Move the arm (linear motion, cartesian end point)
-move_to(dobot, XYZR(100, 100, 0, 0))
+move_to(dobot, XYZR(200, 0, 0, 0))
 sleep(2)
 
 # Turn on the suction cup
 suction_cup(dobot, true)
 
-# Move the arm (queue the commands so they happen sequentially)
-move_to(dobot, XYZR(100, 100, 10, 0); queue=true)
-move_to(dobot, XYZR(50, 100, 10, 0); queue=true)
-move_to(dobot, XYZR(50, 100, 0, 0); queue=true)
+# Move the arm
+# Queue the commands so they happen sequentially
+rmove_to(dobot, XYZR(20, 0, 0, 0); queue=true)
+rmove_to(dobot, XYZR(0, 20, 0, 0); queue=true)
+rmove_to(dobot, XYZR(0, 0, 20, 0); queue=true)
 
 # Turn off the suction cup
 suction_cup(dobot, false; queue=true)
