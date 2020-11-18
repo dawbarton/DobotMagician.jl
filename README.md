@@ -53,7 +53,6 @@ To use the simple interface, import the package and the `Simple` submodule. Curr
 - `move_to`
 - `rmove_to`
 - `pose`
-- `pose_l`
 - `end_effector`
 - `laser`
 - `gripper`
