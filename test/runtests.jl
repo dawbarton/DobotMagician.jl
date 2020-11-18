@@ -5,7 +5,7 @@ using DobotMagician.Simple
 using Test
 
 try
-    dobot = DobotMagician.Magician()
+    global dobot = DobotMagician.Magician()
     global HAS_DOBOT = true
 catch
     global HAS_DOBOT = false

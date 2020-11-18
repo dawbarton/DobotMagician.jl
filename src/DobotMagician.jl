@@ -436,8 +436,9 @@ end
 Return the description of the specified alarm index.
 """
 alarm_description(alarm::Integer) = ALARMS[alarm]
-alarm_description(::Nothing) = nothing
+alarm_description(alarm::Vector{UInt8}) = alarm_description(active_alarm(alarm))
 alarm_description(dobot::Magician) = alarm_description(get_alarms_state(dobot)[1])
+alarm_description(::Nothing) = nothing
 
 const ALARMS = Dict{Int,String}(
     0x00 => "The alarm will be triggered after resetting system",
