@@ -54,7 +54,7 @@ end
 
 function destroy!(dobot::Magician)
     disconnect(dobot)
-    sp_free_port(dobot.port)
+    return sp_free_port(dobot.port)
 end
 
 """
@@ -364,8 +364,8 @@ const get_hht_trig_output_enabled = Command(41, false, false, (is_enabled=UInt8,
 const get_hht_trig_output = Command(42, false, false, (is_triggered=UInt8,), "Get the status of the hand-hold trigger")
 
 # Commands - Arm orientation
-const set_arm_orientation = Command(50, true, true, (orientation=UInt32,), "Set the handedness of the arm (0=left, 1=right)")
-const get_arm_orientation = Command(50, false, false, (orientation=UInt32,), "Get the handedness of the arm (0=left, 1=right)")
+const set_arm_orientation = Command(50, true, true, (orientation=UInt8,), "Set the handedness of the arm (0=left, 1=right)")
+const get_arm_orientation = Command(50, false, false, (orientation=UInt8,), "Get the handedness of the arm (0=left, 1=right)")
 
 # Commands - End effector
 const set_end_effector_params = Command(60, true, true, (x_bias=Float32, y_bias=Float32, z_bias=Float32), "Set the offset of the end effector")
@@ -424,6 +424,76 @@ const get_queued_cmd_current_index = Command(246, false, false, (queued_cmd_curr
 const get_queued_cmd_motion_finish = Command(248, false, false, (isfinish=UInt8,), "Get the current motion status")
 
 #! format: on
+
+# Alarms
+
+"""
+    $(SIGNATURES)
+
+Return the index of the active alarm. Returns `nothing` if no alarm is active.
+"""
+function active_alarm(alarms)
+    for (i, alarm) in enumerate(alarms)
+        for j in 1:8
+            if (alarm & 0x1) == 0x1
+                return (i - 1) * 8 + j - 1
+            end
+            alarm = alarm >> 1
+        end
+    end
+    return nothing
+end
+
+"""
+    $(SIGNATURES)
+
+Return the description of the specified alarm index.
+"""
+alarm_description(alarm::Integer) = ALARMS[alarm]
+alarm_description(::Nothing) = nothing
+alarm_description(dobot::Magician) = alarm_description(get_alarms_state(dobot)[1])
+
+const ALARMS = Dict{Int,String}(
+    0x00 => "The alarm will be triggered after resetting system",
+    0x01 => "Receive undefined instruction",
+    0x02 => "File system error",
+    0x03 =>
+        "There is a failed communication between MCU and FPGA when system is initializing",
+    0x04 => "Get an error value of angle sensor",
+    # Plan error
+    0x10 => "The target point is in abnormal position in Cartesian coordinate system",
+    0x11 => "The target point is out of the workspace, that causes inverse resolve alarm",
+    0x12 => "The inverse resolve of target is out of the limitation",
+    0x13 => "There are some repetitive points in ARC or JUMP_MOVL mode",
+    0x15 => "Set a wrong parameter in JUMP mode",
+    # Move error
+    0x20 =>
+        "Motion trajectory is in singularity position that causes inverse resolve alarm in Cartesian coordinate system",
+    0x21 =>
+        "Motion is out of workspace that causes inverse resolve alarm when Dobot Magician moves",
+    0x22 => "The motion is out of the limitation when Dobot Magican moves",
+    # Over speed error
+    0x30 => "Joint 1 is overspeed",
+    0x31 => "Joint 2 is overspeed",
+    0x32 => "Joint 3 is overspeed",
+    0x33 => "Joint 4 is overspeed",
+    # Limit error
+    0x40 => "Joint 1 moves to the positive limitation area",
+    0x41 => "Joint 1 moves to the negative limitation area",
+    0x42 => "Joint 2 moves to the positive limitation area",
+    0x43 => "Joint 2 moves to the negative limitation area",
+    0x44 => "Joint 3 moves to the positive limitation area",
+    0x45 => "Joint 3 moves to the negative limitation area",
+    0x46 => "Joint 4 moves to the positive limitation area",
+    0x47 => "Joint 4 moves to the negative limitation area",
+    0x48 => "Parallelogram is stretched to the positive limitation area",
+    0x49 => "Parallelogram is stretched to the negative limitation area",
+    # Lose Step error
+    0x50 => "Joint 1 loses step",
+    0x51 => "Joint 2 loses step",
+    0x52 => "Joint 3 loses step",
+    0x53 => "Joint 4 loses step",
+)
 
 include("Direct.jl")
 include("Simple.jl")

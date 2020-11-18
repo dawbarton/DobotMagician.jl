@@ -2,11 +2,20 @@ module Simple
 
 using StaticArrays: FieldVector
 
-using ..DobotMagician: Magician
+using ..DobotMagician: Magician, alarm_description
 using ..Direct
 
 export XYZR, XYZRL, Joint, JointL, MoveMode, MOVJ, MOVL, JUMP
-export move_to, rmove_to, pose, pose_l, end_effector, laser, gripper, suction_cup, wait_for
+export move_to,
+    rmove_to,
+    pose,
+    pose_l,
+    end_effector,
+    laser,
+    gripper,
+    suction_cup,
+    wait_for,
+    alarm_description
 
 """
     XYZR
@@ -255,6 +264,8 @@ end
 
 Wait for `timeout` milliseconds.
 """
-wait_for(dobot::Magician, timeout::Integer; queue=false) = set_wait_cmd(dobot, (timeout,); queue=queue)
+function wait_for(dobot::Magician, timeout::Integer; queue=false)
+    return set_wait_cmd(dobot, (timeout,); queue=queue)
+end
 
 end  # module
