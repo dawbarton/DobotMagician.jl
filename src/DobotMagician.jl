@@ -162,10 +162,10 @@ const TIMEOUT_MSG = "Serial port errored or timed out waiting for response"
 function execute_command(magician::Magician, cmd::Command, payload=(); queue=false)
     # Construct and send the command package
     package = construct_command(cmd, payload, queue)
-    sp_blocking_write(magician.port, package, magician.timeout[])
+    sp_blocking_write(magician.port, package, magician.timeout)
     sp_drain(magician.port)  # ensure that the command package has been sent
     # Read the header + ID + Ctrl
-    nbytes, header = sp_blocking_read(magician.port, 5, magician.timeout[])
+    nbytes, header = sp_blocking_read(magician.port, 5, magician.timeout)
     if nbytes < 5
         throw(ErrorException(TIMEOUT_MSG))
     end
@@ -187,12 +187,12 @@ function execute_command(magician::Magician, cmd::Command, payload=(); queue=fal
         throw(ErrorException("Incorrect isQueued returned"))
     end
     # Read the rest of the payload
-    nbytes, payload = sp_blocking_read(magician.port, sz - 2, magician.timeout[])
+    nbytes, payload = sp_blocking_read(magician.port, sz - 2, magician.timeout)
     if nbytes < (sz - 2)
         throw(ErrorException(TIMEOUT_MSG))
     end
     # Read the checksum
-    nbytes, checksum = sp_blocking_read(magician.port, 1, magician.timeout[])
+    nbytes, checksum = sp_blocking_read(magician.port, 1, magician.timeout)
     if nbytes < 1
         throw(ErrorException(TIMEOUT_MSG))
     end
@@ -293,21 +293,7 @@ _read_var_as_type(T::Type) = :(read_var_as_type(io, $T))
 
 function _read_var_as_type(T::Type{<:Tuple})
     if T isa UnionAll
-        # This occurs where there can be an unspecified number of repeated units
-        # Note the body of the UnionAll of an NTuple is Tuple{Vararg{innerT, N}}
-        body = T.body
-        if !(body isa UnionAll) && (body.parameters[1] <: Vararg)
-            innerT = body.parameters[1].parameters[1]
-            return quote
-                args = []
-                while !eof(io)
-                    push!(args, _read_var_as_type(innerT))
-                end
-                args
-            end
-        else
-            throw(ArgumentError("Got a UnionAll that is not an NTuple with unbound N (only)"))
-        end
+        throw(ArgumentError("Cannot read varargs"))
     else
         body = :(())
         for TT in T.parameters

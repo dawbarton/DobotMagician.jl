@@ -169,7 +169,7 @@ Return the pose of the Dobot (both in Cartesian and joint coordinates).
 """
 function pose(dobot::Magician)
     (xyzr, joint) = get_pose(dobot)
-    return (xyzr=XYZR(xyzr...), joint=Joint(joint...))
+    return (xyzr=XYZR(xyzr), joint=Joint(joint))
 end
 
 """
