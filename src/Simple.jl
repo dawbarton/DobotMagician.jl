@@ -1,6 +1,7 @@
 module Simple
 
 using StaticArrays: FieldVector
+using DocStringExtensions: SIGNATURES
 
 using ..DobotMagician: Magician, alarm_description
 using ..Direct
@@ -163,7 +164,7 @@ rmove_to(dobot::Magician, xyzrl::XYZRL, ::Type{JUMP}; queue=false) = set_ptp_wit
 #! format: on
 
 """
-    pose(dobot)
+    $(SIGNATURES)
 
 Return the pose of the Dobot (both in Cartesian and joint coordinates).
 """
@@ -173,7 +174,7 @@ function pose(dobot::Magician)
 end
 
 """
-    pose_l(dobot)
+    $(SIGNATURES)
 
 Return the pose of the Dobot including the sliding rail (both in Cartesian and joint
 coordinates).
@@ -185,7 +186,7 @@ function pose_l(dobot::Magician)
 end
 
 """
-    end_effector(dobot, effector::Symbol, [ctrl::Bool])
+    $(SIGNATURES)
 
 Enable control of a particular end effector. Valid values for `effector` are
 
@@ -193,13 +194,13 @@ Enable control of a particular end effector. Valid values for `effector` are
 - `:gripper`
 - `:suction_cup`
 """
-function end_effector(dobot::Magician, effector::Symbol, ctrl::Bool=true)
+function end_effector(dobot::Magician, effector::Symbol, ctrl::Bool=true; queue=false)
     if effector === :laser
-        set_end_effector_laser(dobot, (UInt8(ctrl), 0))
+        set_end_effector_laser(dobot, (UInt8(ctrl), 0); queue=queue)
     elseif effector === :gripper
-        set_end_effector_gripper(dobot, (UInt8(ctrl), 0))
+        set_end_effector_gripper(dobot, (UInt8(ctrl), 0); queue=queue)
     elseif effector === :suction_cup
-        set_end_effector_suction_cup(dobot, (UInt8(ctrl), 0))
+        set_end_effector_suction_cup(dobot, (UInt8(ctrl), 0); queue=queue)
     else
         throw(ArgumentError("Unknown end effector"))
     end
@@ -207,7 +208,7 @@ function end_effector(dobot::Magician, effector::Symbol, ctrl::Bool=true)
 end
 
 """
-    laser(dobot)
+    $(SIGNATURES)
 
 Return true if the laser is on, otherwise return false.
 """
@@ -217,14 +218,16 @@ function laser(dobot::Magician)
 end
 
 """
-    laser(dobot)
+    $(SIGNATURES)
 
 Turn the laser on or off.
 """
-laser(dobot::Magician, status::Bool) = set_end_effector_laser(dobot, (1, UInt8(status)))
+function laser(dobot::Magician, status::Bool; queue=false)
+    return set_end_effector_laser(dobot, (1, UInt8(status)); queue=queue)
+end
 
 """
-    gripper(dobot)
+    $(SIGNATURES)
 
 Return true if the gripper is on, otherwise return false.
 """
@@ -234,14 +237,16 @@ function gripper(dobot::Magician)
 end
 
 """
-    gripper(dobot)
+    $(SIGNATURES)
 
 Turn the gripper on or off.
 """
-gripper(dobot::Magician, status::Bool) = set_end_effector_gripper(dobot, (1, UInt8(status)))
+function gripper(dobot::Magician, status::Bool; queue=false)
+    return set_end_effector_gripper(dobot, (1, UInt8(status)); queue=queue)
+end
 
 """
-    suction_cup(dobot)
+    $(SIGNATURES)
 
 Return true if the suction_cup is on, otherwise return false.
 """
@@ -251,16 +256,16 @@ function suction_cup(dobot::Magician)
 end
 
 """
-    suction_cup(dobot)
+    $(SIGNATURES)
 
 Turn the suction_cup on or off.
 """
-function suction_cup(dobot::Magician, status::Bool)
-    return set_end_effector_suction_cup(dobot, (1, UInt8(status)))
+function suction_cup(dobot::Magician, status::Bool; queue=false)
+    return set_end_effector_suction_cup(dobot, (1, UInt8(status)); queue=queue)
 end
 
 """
-    wait_for(dobot, timeout; queue=false)
+    $(SIGNATURES)
 
 Wait for `timeout` milliseconds.
 """
