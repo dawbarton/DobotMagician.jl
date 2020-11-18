@@ -155,8 +155,10 @@ if HAS_DOBOT
     end
 
     @testset "Simple interface (get only)" begin
-        @test pose(dobot) isa NamedTuple{(:xyzr, :joint),Tuple{XYZR,Joint}}
-        @test pose_l(dobot) isa NamedTuple{(:xyzrl, :jointl),Tuple{XYZRL,JointL}}
+        @test pose(dobot, XYZR) isa XYZR
+        @test pose(dobot, Joint) isa Joint
+        @test pose(dobot, XYZRL) isa XYZRL
+        @test pose(dobot, JointL) isa JointL
         @test laser(dobot) isa Bool
         @test gripper(dobot) isa Bool
         @test suction_cup(dobot) isa Bool

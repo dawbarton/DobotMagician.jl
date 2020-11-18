@@ -166,24 +166,14 @@ rmove_to(dobot::Magician, xyzrl::XYZRL, ::Type{JUMP}; queue=false) = set_ptp_wit
 """
     $(SIGNATURES)
 
-Return the pose of the Dobot (both in Cartesian and joint coordinates).
+Return the pose of the Dobot in the specified coordinate frame. The coordinate frame can be
+`XYZR` or `Joint`; if the sliding rail attachment is used, the corresponding coordinate
+frames are `XYZRL` and `JointL`.
 """
-function pose(dobot::Magician)
-    (xyzr, joint) = get_pose(dobot)
-    return (xyzr=XYZR(xyzr), joint=Joint(joint))
-end
-
-"""
-    $(SIGNATURES)
-
-Return the pose of the Dobot including the sliding rail (both in Cartesian and joint
-coordinates).
-"""
-function pose_l(dobot::Magician)
-    (xyzr, joint) = get_pose(dobot)
-    (l,) = get_pose_l(dobot)
-    return (xyzrl=XYZRL(xyzr..., l), jointl=JointL(joint..., l))
-end
+pose(dobot::Magician, coordinates::Type{XYZR}) = XYZR(get_pose(dobot)[1])
+pose(dobot::Magician, ::Type{Joint}) = Joint(get_pose(dobot)[2])
+pose(dobot::Magician, ::Type{XYZRL}) = XYZRL(get_pose(dobot)[1]..., get_pose_l(dobot)[1])
+pose(dobot::Magician, ::Type{JointL}) = JointL(get_pose(dobot)[2]..., get_pose_l(dobot)[1])
 
 """
     $(SIGNATURES)
