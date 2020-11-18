@@ -120,7 +120,7 @@ function rmove_to end
 move_to(dobot::Magician, xyzr::Union{XYZR, XYZRL}; queue=false) = move_to(dobot, xyzr, MOVL; queue=queue)
 move_to(dobot::Magician, joint::Union{Joint, JointL}; queue=false) = move_to(dobot, joint, MOVJ; queue=queue)
 
-rmove_to(dobot::Magician, xyzr::XYZR; queue=false) = rmove_to(dobot, xyzr, JUMP; queue=queue)
+rmove_to(dobot::Magician, xyzr::XYZR; queue=false) = rmove_to(dobot, xyzr, MOVL; queue=queue)
 rmove_to(dobot::Magician, joint::Joint; queue=false) = rmove_to(dobot, joint, MOVJ; queue=queue)
 
 # ptp_mode: 0=JUMP_XYZ, 1=MOVJ_XYZ, 2=MOVL_XYZ, 3=JUMP_ANGLE, 4=MOVJ_ANGLE, 5=MOVL_ANGLE,
@@ -142,9 +142,9 @@ move_to(dobot::Magician, jointl::JointL, ::Type{MOVL}; queue=false) = set_ptp_wi
 
 # Note: Dobot Magician API is rather confusing about the relative moves - these need checking...
 rmove_to(dobot::Magician, joint::Joint, ::Type{MOVJ}; queue=false) = set_ptp_cmd(dobot, (6, joint); queue=queue)
-rmove_to(dobot::Magician, joint::Joint, ::Type{MOVL}; queue=false) = set_ptp_cmd(dobot, (7, joint); queue=queue)
+rmove_to(dobot::Magician, xyzr::XYZR, ::Type{MOVL}; queue=false) = set_ptp_cmd(dobot, (7, xyzr); queue=queue)
 rmove_to(dobot::Magician, xyzr::XYZR, ::Type{MOVJ}; queue=false) = set_ptp_cmd(dobot, (8, xyzr); queue=queue)
-rmove_to(dobot::Magician, xyzr::XYZR, ::Type{JUMP}; queue=false) = set_ptp_cmd(dobot, (9, xyzr); queue=queue)
+rmove_to(dobot::Magician, xyzr::XYZR, ::Type{JUMP}; queue=false) = set_ptp_cmd(dobot, (9, xyzr); queue=queue) # doesn't seem to work?
 
 rmove_to(dobot::Magician, jointl::JointL, ::Type{MOVJ}; queue=false) = set_ptp_with_l_cmd(dobot, (6, jointl); queue=queue)
 rmove_to(dobot::Magician, jointl::JointL, ::Type{MOVL}; queue=false) = set_ptp_with_l_cmd(dobot, (7, jointl); queue=queue)

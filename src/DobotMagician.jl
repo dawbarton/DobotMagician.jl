@@ -337,16 +337,17 @@ const get_device_version = Command(2, false, false, (major_version=UInt8, minor_
 const set_device_with_l = Command(3, true, false, (is_with_l=UInt8, version=UInt8), "Set sliding rail enable status")
 const get_device_with_l = Command(3, false, false, (is_with_l=UInt8,), "Get sliding rail enable status")
 const get_device_time = Command(4, false, false, (g_systick=UInt32,), "Get device time")
-const get_device_id = Command(5, false, false, (device_id=NTuple{3,UInt32},), "Get device ID")
+const get_device_info = Command(6, false, false, (runtime=UInt64, power_on=UInt32, power_off=UInt32), "Get device info")
 
 # Commands - Real-time pose
 const get_pose = Command(10, false, false, (xyzr=NTuple{4,Float32}, J=NTuple{4,Float32}), "Get the real-time pose")
 const reset_pose = Command(11, true, false, (manual=UInt8, rear_arm_angle=Float32, front_arm_angle=Float32), "Reset the real-time pose")
+const get_kinematics = Command(12, false, false, (velocity=Float32, acceleration=Float32), "Get the kinematics")
 const get_pose_l = Command(13, false, false, (pose_l=Float32,), "Get the real-time pose of the sliding rail")
 
 # Commands - Alarm
 const get_alarms_state = Command(20, false, false, (alarms_state=Vector{UInt8},), "Get the alarms state")
-const clear_all_alarms_state = Command(21, true, false, (), "Clear the alarms state")
+const clear_all_alarms_state = Command(20, true, false, (), "Clear the alarms state")
 
 # Commands - Homing
 const set_home_params = Command(30, true, true, (x=Float32, y=Float32, z=Float32, r=Float32), "Set the homing position")
@@ -356,11 +357,15 @@ const set_auto_leveling = Command(32, true, true, (is_autoleveling=UInt8, accura
 const get_auto_leveling = Command(32, false, false, (result=Float32,), "Get automatic leveling result")
 
 # Commands - Handhold teaching
-const set_hht_trig_mode = Command(40, true, false, (hht_trig_mode=UInt64,), "Set hand-hold teaching mode")
-const get_hht_trig_mode = Command(40, false, false, (hht_trig_mode=UInt64,), "Get hand-hold teaching mode")
+const set_hht_trig_mode = Command(40, true, false, (hht_trig_mode=UInt8,), "Set hand-hold teaching mode")
+const get_hht_trig_mode = Command(40, false, false, (hht_trig_mode=UInt8,), "Get hand-hold teaching mode")
 const set_hht_trig_output_enabled = Command(41, true, false, (is_enabled=UInt8,), "Set status of hand-hold teaching mode")
 const get_hht_trig_output_enabled = Command(41, false, false, (is_enabled=UInt8,), "Get status of hand-hold teaching mode")
 const get_hht_trig_output = Command(42, false, false, (is_triggered=UInt8,), "Get the status of the hand-hold trigger")
+
+# Commands - Arm orientation
+const set_arm_orientation = Command(50, true, true, (orientation=UInt32,), "Set the handedness of the arm (0=left, 1=right)")
+const get_arm_orientation = Command(50, false, false, (orientation=UInt32,), "Get the handedness of the arm (0=left, 1=right)")
 
 # Commands - End effector
 const set_end_effector_params = Command(60, true, true, (x_bias=Float32, y_bias=Float32, z_bias=Float32), "Set the offset of the end effector")
@@ -411,11 +416,12 @@ const set_wait_cmd = Command(110, true, true, (timeout=UInt32,), "Wait the speci
 # Commands - Queued execution control commands
 const set_queued_cmd_start_exec = Command(240, true, false, (), "Start the command queue")
 const set_queued_cmd_stop_exec = Command(241, true, false, (), "Stop the command queue")
-const set_queued_cmd_force_stop_exec = Command(242, true, false, (), "Forcibly stop the command queue")
+const set_queued_cmd_force_stop_exec = Command(242, true, false, (), "Forcibly stop the command queue (interrupt executing commands)")
 const set_queued_cmd_start_download = Command(243, true, false, (total_loop=UInt32, line_per_loop=UInt32), "Start downloading")
 const set_queued_cmd_stop_download = Command(244, true, false, (), "Stop downloading")
 const set_queued_cmd_clear = Command(245, true, false, (), "Clear the command queue")
 const get_queued_cmd_current_index = Command(246, false, false, (queued_cmd_current_index=UInt64,), "Get the command index")
+const get_queued_cmd_motion_finish = Command(248, false, false, (isfinish=UInt8,), "Get the current motion status")
 
 #! format: on
 
